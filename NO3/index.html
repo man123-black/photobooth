@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Photobooth</title>
     <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bebas+Neue&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&family=Syne:wght@700&family=Space+Grotesk:wght@700&family=Great+Vibes&family=Source+Code+Pro:wght@700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -139,11 +139,11 @@
             position: relative; background-color: #fdfdfd; padding: 18px 18px 14px 18px; 
             box-shadow: 0 30px 60px -10px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05); 
             display: flex; flex-direction: column; gap: 12px; transition: background 0.4s ease; 
-            overflow: hidden; border-radius: 4px; /* Bo góc cực nhẹ giống giấy in thật */
+            overflow: hidden; border-radius: 4px;
         }
         
         .frame-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; border-radius: 4px;}
-        #draw-layer { position: absolute; top: 0; left: 0; z-index: 8; pointer-events: none; }
+        #draw-layer { position: absolute; top: 0; left: 0; z-index: 8; pointer-events: none; touch-action: none; }
         #sticker-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; pointer-events: none; overflow: hidden; }
 
         .border-song .frame-overlay { border: 8px solid transparent; border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M0 25 Q12.5 0 25 25 T50 25' fill='none' stroke='%23b046ff' stroke-width='4'/%3E%3Cpath d='M0 35 Q12.5 10 25 35 T50 35' fill='none' stroke='%23ff5b99' stroke-width='4'/%3E%3C/svg%3E") 15 round; }
@@ -181,7 +181,7 @@
         .sticker-wrapper {
             position: absolute; display: inline-block; user-select: none;
             border: 1.5px dashed transparent; padding: 4px; cursor: grab;
-            transform: translate(-50%, -50%) scale(1); transition: border 0.2s;
+            transform: translate(-50%, -50%) scale(1); transition: border 0.2s; touch-action: none;
         }
         .sticker-wrapper.active-sticker, .sticker-wrapper:hover { border-color: rgba(176, 70, 255, 0.8); z-index: 100;}
         .sticker-action {
@@ -203,7 +203,6 @@
         .tool-section:last-child { border-bottom: none; }
         .section-title { font-size: 11px; color: var(--text-dark); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
 
-        /* BẢNG MÀU NỀN ĐƯỢC CHỈNH LẠI CHUẨN XÁC */
         .color-palette { display: flex; gap: 10px; flex-wrap: wrap; }
         .color-btn { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
         .color-btn:hover { transform: scale(1.1) translateY(-2px); }
@@ -267,6 +266,32 @@
         .dl-png:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 91, 153, 0.5); }
         .dl-jpg { background: linear-gradient(135deg, #6a5acd, #b046ff); color: white; box-shadow: 0 5px 15px rgba(176, 70, 255, 0.3);}
         .dl-jpg:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(176, 70, 255, 0.5); }
+
+        /* --- PHẦN BỔ SUNG CHO MOBILE (KHÔNG TRÀN, CO GIÃN) --- */
+        @media (max-width: 1200px) {
+            .container { width: 100%; height: auto; min-height: 100vh; border-radius: 0; padding: 15px; }
+            .decorate-screen.active { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; padding-right: 0; flex: none; height: auto; overflow: visible; }
+            .preview-area { min-height: 400px; padding: 20px; }
+        }
+
+        @media (max-width: 768px) {
+            .header { margin-bottom: 25px; }
+            .home-screen h1 { font-size: 24px; }
+            .layouts { flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
+            .layout-card { width: 100%; max-width: 280px; padding: 20px; }
+            .camera-container { width: 100%; max-width: 460px; height: auto; aspect-ratio: 4/3; }
+            .controls-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            #btn-capture { grid-column: span 2; }
+            .select-item { width: 45%; max-width: 180px; }
+            .select-grid { gap: 10px; }
+            #btn-goto-decorate { width: auto !important; flex: 1; }
+            .grid-4 { grid-template-columns: repeat(4, 1fr); }
+            .grid-2 { grid-template-columns: repeat(2, 1fr); }
+            .font-btn { padding: 8px; font-size: 12px; }
+            .action-row { flex-direction: column; }
+            .photo-placeholders { flex-wrap: wrap; justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -320,9 +345,9 @@
         <h1>Chọn ảnh đẹp nhất</h1>
         <p style="color: var(--text-gray); font-size: 14px;">Hoàn hảo! Bấm trang trí ngay.</p>
         <div class="select-grid" id="select-grid"></div>
-        <div style="display: flex; gap: 20px;">
-            <button class="btn-outline" style="width: 160px; border-radius:30px;" onclick="startCameraPhase()"><i class="fa-solid fa-arrow-left"></i> CHỤP LẠI</button>
-            <button class="btn" id="btn-goto-decorate" style="width: 250px" onclick="buildDecorateScreen()" disabled>TRANG TRÍ ẢNH ✨</button>
+        <div style="display: flex; gap: 10px; width: 100%; max-width: 450px;">
+            <button class="btn-outline" style="border-radius:30px; flex: 1;" onclick="startCameraPhase()"><i class="fa-solid fa-arrow-left"></i> CHỤP LẠI</button>
+            <button class="btn" id="btn-goto-decorate" style="flex: 2" onclick="buildDecorateScreen()" disabled>TRANG TRÍ ẢNH ✨</button>
         </div>
     </div>
 
@@ -843,14 +868,19 @@
             } else if (action === 'resize') {
                 isResizing = true; initScale = parseFloat(wrapper.dataset.scale);
             }
-            e.preventDefault(); e.stopPropagation();
+            e.stopPropagation(); // Xoá preventDefault ở đây để di động vẫn click được bình thường
         };
 
+        // Bắt sự kiện trên PC
         wrapper.addEventListener('mousedown', (e) => startAction(e, 'drag'));
         resBtn.addEventListener('mousedown', (e) => startAction(e, 'resize'));
+        // Bắt sự kiện trên Mobile
+        wrapper.addEventListener('touchstart', (e) => startAction(e, 'drag'));
+        resBtn.addEventListener('touchstart', (e) => startAction(e, 'resize'));
 
         const moveAction = (e) => {
             if(!isDragging && !isResizing) return;
+            e.preventDefault(); // Ngăn cuộn trang web khi đang kéo thả trên điện thoại
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
             
@@ -867,8 +897,13 @@
         };
 
         const endAction = () => { isDragging = false; isResizing = false; };
+        
+        // Gắn sự kiện PC
         document.addEventListener('mousemove', moveAction);
         document.addEventListener('mouseup', endAction);
+        // Gắn sự kiện Mobile
+        document.addEventListener('touchmove', moveAction, {passive: false});
+        document.addEventListener('touchend', endAction);
         
         wrapper.addEventListener('wheel', (e) => {
             if(currentTool !== 'select') return;
@@ -897,9 +932,16 @@
         ctxDraw.lineCap = 'round'; ctxDraw.lineJoin = 'round';
 
         if (!isDrawEventsBound) {
+            // PC
             canvasDraw.addEventListener('mousedown', startDraw);
             canvasDraw.addEventListener('mousemove', drawMove);
             window.addEventListener('mouseup', endDraw);
+            
+            // Mobile (Cảm ứng)
+            canvasDraw.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, {passive: false});
+            canvasDraw.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e); }, {passive: false});
+            window.addEventListener('touchend', endDraw);
+
             isDrawEventsBound = true;
         }
         redrawPaths();
@@ -909,7 +951,12 @@
         if(currentTool !== 'draw') return;
         isDrawing = true; currentPath = [];
         const rect = canvasDraw.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        
+        // Hỗ trợ cả chuột (PC) và ngón tay (Mobile)
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const x = clientX - rect.left, y = clientY - rect.top;
         
         ctxDraw.beginPath(); ctxDraw.moveTo(x, y);
         const color = document.getElementById('draw-color').value;
@@ -920,7 +967,11 @@
     function drawMove(e) {
         if(!isDrawing || currentTool !== 'draw') return;
         const rect = canvasDraw.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const x = clientX - rect.left, y = clientY - rect.top;
         
         const color = document.getElementById('draw-color').value;
         const size = document.getElementById('draw-size').value;
