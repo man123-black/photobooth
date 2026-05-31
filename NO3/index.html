@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photobooth Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bebas+Neue&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&family=Syne:wght@700&family=Space+Grotesk:wght@700&family=Great+Vibes&family=Source+Code+Pro:wght@700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0710; 
+            --panel-bg: rgba(20, 17, 33, 0.95); 
+            --card-bg: #1a1625;
+            --primary: #ff5b99; 
+            --secondary: #b046ff; 
+            --text-light: #ffffff; 
+            --text-gray: #a29db4; 
+            --text-dark: #b8b3c9;
+            --scroll-track: transparent; 
+            --scroll-thumb: rgba(176, 70, 255, 0.5);
+            --border-color: rgba(255, 255, 255, 0.08); 
+            --btn-bg: rgba(0, 0, 0, 0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Be Vietnam Pro', sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #0b0710 0%, #150d24 100%); 
+            color: var(--text-light); display: flex; justify-content: center; 
+            align-items: center; min-height: 100vh;
+        }
+        
+        .container {
+            width: 1200px; height: 800px; 
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px; 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.1);
+            padding: 25px 30px; display: flex; flex-direction: column;
+            position: relative; overflow: hidden; border: 1px solid var(--border-color);
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0;}
+        .logo { font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.8), 0 0 24px rgba(176,70,255,0.5); animation: neonGlow 1.8s ease-in-out infinite alternate; }
+        .logo .gradient-text { background: linear-gradient(90deg, #00e5ff, #ff5b99); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @keyframes neonGlow { 0% { text-shadow: 0 0 8px rgba(0,229,255,0.8), 0 0 18px rgba(176,70,255,0.5); opacity: 0.95; } 50% { text-shadow: 0 0 14px rgba(0,229,255,1), 0 0 28px rgba(176,70,255,0.7); opacity: 1; } 100% { text-shadow: 0 0 10px rgba(0,229,255,0.7), 0 0 22px rgba(176,70,255,0.45); opacity: 0.9; } }
+        .header-decor { display: flex; gap: 6px; }
+        .header-decor span { width: 18px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; transition: 0.3s;}
+        .header-decor span.active { background: var(--secondary); box-shadow: 0 0 12px var(--secondary); }
+
+        .screen { display: none; flex: 1; min-height: 0; }
+        .screen.active { display: flex; animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .home-screen.active, .capture-screen.active, .select-screen.active { flex-direction: column; }
+        .decorate-screen.active { flex-direction: row; gap: 25px; overflow: hidden; }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary)); border: none; color: white;
+            padding: 14px 35px; border-radius: 12px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+            cursor: pointer; transition: all 0.3s ease; text-align: center;
+            box-shadow: 0 8px 20px rgba(176, 70, 255, 0.3);
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(255, 91, 153, 0.4); filter: brightness(1.1); }
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        
+        .btn-outline {
+            background: var(--btn-bg); border: 1px solid var(--border-color); color: var(--text-light);
+            padding: 12px 18px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 600; text-align: center;
+            transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-outline:hover, .btn-outline.active { 
+            background: rgba(176, 70, 255, 0.15); border-color: var(--secondary); color: white;
+            box-shadow: 0 0 15px rgba(176, 70, 255, 0.2);
+        }
+
+        .home-screen { align-items: center; justify-content: center; text-align: center; margin-top: -20px;}
+        .home-screen h1 { margin-bottom: 10px; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+        .home-screen p { color: var(--text-gray); margin-bottom: 40px; font-size: 15px; font-weight: 500;}
+        .layouts { display: flex; gap: 25px; margin-bottom: 50px; }
+        
+        .layout-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px;
+            padding: 40px 20px 30px 20px; width: 220px; cursor: pointer; transition: all 0.3s ease; 
+            position: relative; display: flex; flex-direction: column; align-items: center;
+        }
+        .layout-card:hover { transform: translateY(-5px); border-color: rgba(255, 255, 255, 0.2); background: rgba(255,255,255,0.06); }
+        .layout-card.selected { 
+            border-color: var(--secondary); background: rgba(176, 70, 255, 0.08); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(176, 70, 255, 0.15); 
+        }
+        .layout-card .icon { margin-bottom: 18px; color: var(--primary); font-size: 36px; filter: drop-shadow(0 0 8px rgba(255, 91, 153, 0.5));}
+        .layout-card h3 { margin: 0 0 8px 0; font-size: 17px; font-weight: 700; letter-spacing: 0.5px;}
+        .badge { position: absolute; top: -12px; right: 20px; background: linear-gradient(90deg, var(--secondary), var(--primary)); color: white; font-size: 10px; font-weight: 800; padding: 6px 12px; border-radius: 20px; box-shadow: 0 4px 10px rgba(255, 91, 153, 0.4); letter-spacing: 1px;}
+
+        .capture-screen { align-items: center; justify-content: flex-start; }
+        #status-text { margin-bottom: 5px; font-size: 22px; font-weight: 800; letter-spacing: 1px;}
+        .camera-container { 
+            position: relative; width: 460px; height: 345px; background: #000; 
+            border-radius: 16px; overflow: hidden; margin-bottom: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--border-color);
+        }
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: 900; color: white; text-shadow: 0 5px 25px rgba(0,0,0,0.9); display: none; }
+        .photo-placeholders { display: flex; gap: 10px; margin-bottom: 25px; }
+        .placeholder-box { 
+            width: 46px; height: 34px; background: rgba(255,255,255,0.03); 
+            border: 1px dashed rgba(255,255,255,0.2); border-radius: 6px; 
+            background-size: cover; background-position: center; transition: 0.3s;
+        }
+        .controls-grid { display: grid; grid-template-columns: 160px 260px; gap: 15px 20px; }
+
+        .select-screen { align-items: center; justify-content: flex-start; padding-top: 15px;}
+        .select-screen h1 { font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px;}
+        .select-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 650px; margin-top: 25px; margin-bottom: 35px; }
+        .select-item { 
+            width: 180px; aspect-ratio: 4/3; background: var(--card-bg); border-radius: 10px; 
+            overflow: hidden; cursor: pointer; position: relative; border: 3px solid transparent; 
+            transition: all 0.2s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+        .select-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s;}
+        .select-item:hover { transform: scale(1.02); }
+        .select-item.selected { border-color: var(--primary); box-shadow: 0 0 20px rgba(255, 91, 153, 0.4); }
+        .select-item.selected img { opacity: 0.8; }
+        .select-item .badge-select { 
+            position: absolute; top: 10px; left: 10px; background: var(--primary); color: white; 
+            width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 13px; font-weight: 800; opacity: 0; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        }
+        .select-item.selected .badge-select { opacity: 1; transform: scale(1.1); }
+
+        .preview-area {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.3); border-radius: 16px; overflow-y: auto; padding: 30px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.02);
+        }
+        
+        .photo-frame { 
+            position: relative; background-color: #fdfdfd; padding: 18px 18px 14px 18px; 
+            box-shadow: 0 30px 60px -10px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05); 
+            display: flex; flex-direction: column; gap: 12px; transition: background 0.4s ease; 
+            overflow: hidden; border-radius: 4px; /* Bo góc cực nhẹ giống giấy in thật */
+        }
+        
+        .frame-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; border-radius: 4px;}
+        #draw-layer { position: absolute; top: 0; left: 0; z-index: 8; pointer-events: none; }
+        #sticker-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; pointer-events: none; overflow: hidden; }
+
+        .border-song .frame-overlay { border: 8px solid transparent; border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M0 25 Q12.5 0 25 25 T50 25' fill='none' stroke='%23b046ff' stroke-width='4'/%3E%3Cpath d='M0 35 Q12.5 10 25 35 T50 35' fill='none' stroke='%23ff5b99' stroke-width='4'/%3E%3C/svg%3E") 15 round; }
+        .border-chambi .frame-overlay { border: 8px dotted var(--primary); opacity: 0.8;}
+        .border-neon { box-shadow: inset 0 0 15px #00e5ff, inset 0 0 30px var(--secondary) !important; border: 2px solid #fff; }
+        .border-vintage { background-color: #f4ecd8 !important; }
+        .border-vintage .frame-overlay { border: 2px dashed rgba(92, 64, 51, 0.5); bottom: 8px; top: 8px; left: 8px; right: 8px; }
+        .border-sao .frame-overlay { border: 12px solid transparent; border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffdd00'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E") 30% round; }
+        .border-tim .frame-overlay { border: 12px solid transparent; border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff5b99'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") 30% round; }
+        .border-hoa .frame-overlay { border: 14px solid transparent; border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff8cbf'%3E%3Cpath d='M12 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm8-10c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2zM4 12c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2zm8-5c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z'/%3E%3C/svg%3E") 33% round; }
+        .border-glitter { box-shadow: inset 0 0 10px rgba(255,255,255,0.8), inset 0 0 25px #f0f !important; }
+        .border-polaroid { padding-bottom: 50px !important; background-color: #fcfcfc !important;} 
+        .border-rainbow .frame-overlay { border: 6px solid transparent; border-image: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet) 1; }
+        .border-kimcuong .frame-overlay { border: 8px solid transparent; border-image: linear-gradient(45deg, #00e5ff, #b046ff) 1; }
+        .border-confetti .frame-overlay { background-image: radial-gradient(#ff5b99 15%, transparent 16%), radial-gradient(#00e5ff 15%, transparent 16%); background-size: 14px 14px; background-position: 0 0, 7px 7px; opacity: 0.4;}
+
+        .photo-frame.layout-2 { width: 190px; max-width: 100%; }
+        .photo-frame.layout-4 { width: 190px; max-width: 100%; }
+        .photo-frame.layout-grid { width: 320px; padding: 18px; max-width: 100%; }
+        .photo-grid { display: flex; flex-direction: column; gap: 10px; z-index: 2;}
+        .layout-grid .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .photo-item { width: 100%; background: #ccc; aspect-ratio: 4/3; overflow: hidden; border-radius: 4px; box-shadow: inset 0 3px 6px rgba(0,0,0,0.2); }
+        .photo-item img { 
+            width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.3s; 
+            filter: brightness(var(--br, 100%)) contrast(var(--ct, 100%)) saturate(var(--sat, 100%)) var(--custom-filter, grayscale(0)) var(--funny-filter, grayscale(0)); 
+        }
+        
+        .frame-footer { text-align: center; color: #1a1a1a; margin-top: 6px; padding-bottom: 2px; z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center;}
+        .frame-footer h3 { font-weight: 900; font-size: 15px; margin: 0; letter-spacing: 1.5px;}
+        .frame-footer p { font-size: 8px; margin-top: 4px; font-weight: 700; opacity: 0.6; letter-spacing: 0.5px;}
+        #qr-code { margin-top: 8px; display: none; }
+        #qr-code img { width: 35px; height: 35px;}
+
+        .sticker-wrapper {
+            position: absolute; display: inline-block; user-select: none;
+            border: 1.5px dashed transparent; padding: 4px; cursor: grab;
+            transform: translate(-50%, -50%) scale(1); transition: border 0.2s;
+        }
+        .sticker-wrapper.active-sticker, .sticker-wrapper:hover { border-color: rgba(176, 70, 255, 0.8); z-index: 100;}
+        .sticker-action {
+            position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%;
+            display: none; align-items: center; justify-content: center; font-size: 10px; color: black;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10; transition: 0.2s;
+        }
+        .sticker-action:hover { transform: scale(1.15); }
+        .sticker-wrapper.active-sticker .sticker-action, .sticker-wrapper:hover .sticker-action { display: flex; }
+        .del-btn { top: -10px; right: -10px; color: #ff3b30; font-weight: bold;}
+        .res-btn { bottom: -10px; right: -10px; cursor: nwse-resize; background: var(--secondary); color: white;}
+
+        .sidebar { width: 360px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; padding-right: 12px; }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: var(--scroll-track); }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+
+        .tool-section { display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;}
+        .tool-section:last-child { border-bottom: none; }
+        .section-title { font-size: 11px; color: var(--text-dark); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
+
+        /* BẢNG MÀU NỀN ĐƯỢC CHỈNH LẠI CHUẨN XÁC */
+        .color-palette { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-btn { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+        .color-btn:hover { transform: scale(1.1) translateY(-2px); }
+        .color-btn.active { transform: scale(1.1); border-color: var(--primary); box-shadow: 0 0 12px rgba(255, 91, 153, 0.5); }
+        .color-btn-add { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:var(--text-gray); box-shadow:none;}
+
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .icon-btn, .filter-btn, .tool-btn, .font-btn {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 10px; color: var(--text-gray); cursor: pointer; transition: all 0.2s ease;
+        }
+        .icon-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 6px; font-size: 10px; font-weight: 600; gap: 8px; }
+        .icon-btn span { font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));}
+        
+        .filter-btn { padding: 10px 14px; font-size: 12px; font-weight: 600; display: flex; gap: 10px; align-items: center;}
+        .f-color { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
+
+        .icon-btn:hover, .filter-btn:hover, .tool-btn:hover, .font-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); color: white;}
+        .icon-btn.active, .filter-btn.active, .tool-btn.active, .font-btn.active { 
+            background: rgba(176, 70, 255, 0.15); border-color: var(--secondary); color: white; 
+            box-shadow: 0 0 15px rgba(176, 70, 255, 0.2); 
+        }
+
+        .slider-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+        .slider-group label { font-size: 12px; color: var(--text-dark); display: flex; justify-content: space-between; font-weight: 600;}
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--secondary); cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px #b046ff; transition: 0.2s;}
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .sticker-grid { display: flex; gap: 14px; flex-wrap: wrap; font-size: 24px; cursor: pointer; margin-bottom: 10px; padding: 5px;}
+        .sticker-grid span { transition: 0.2s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));}
+        .sticker-grid span:hover { transform: scale(1.4) translateY(-2px); }
+        .upload-sticker-btn { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.2); color: var(--text-light); padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: 0.3s;}
+        .upload-sticker-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--primary);}
+        
+        .tool-btn { padding: 10px; font-size: 12px; font-weight: 600; display: flex; justify-content: center; gap: 8px; align-items: center;}
+        
+        .draw-options { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);}
+        .draw-color-btn { width: 24px; height: 24px; border: none; border-radius: 6px; cursor: pointer; padding: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
+        
+        .action-row { display: flex; gap: 10px; margin-top: 5px;}
+        .action-btn { flex: 1; padding: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        .input-text { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px 16px; border-radius: 10px; font-size: 13px; outline: none; margin-bottom: 5px; transition: 0.3s; font-weight: 500;}
+        .input-text:focus { border-color: var(--secondary); box-shadow: 0 0 15px rgba(176, 70, 255, 0.2); }
+        .font-btn { padding: 12px; font-size: 14px; text-align: center; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: var(--text-dark); margin-top: 5px;}
+        .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border-radius: 20px; transition: .4s; }
+        .slider-toggle:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: var(--text-light); transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3);}
+        input:checked + .slider-toggle { background-color: var(--secondary); }
+        input:checked + .slider-toggle:before { transform: translateX(18px); }
+
+        .download-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 12px; cursor: pointer; margin-top: 5px; transition: 0.3s; display: flex; justify-content: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px;}
+        .dl-png { background: linear-gradient(135deg, #ff5b99, #ff8cbf); color: white; box-shadow: 0 5px 15px rgba(255, 91, 153, 0.3); }
+        .dl-png:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 91, 153, 0.5); }
+        .dl-jpg { background: linear-gradient(135deg, #6a5acd, #b046ff); color: white; box-shadow: 0 5px 15px rgba(176, 70, 255, 0.3);}
+        .dl-jpg:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(176, 70, 255, 0.5); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">DuyMan <span class="gradient-text">STUDIO</span></div>
+        <div class="header-decor"><span class="active"></span><span></span><span></span></div>
+    </div>
+    <div class="screen home-screen active" id="screen-home">
+        <h1>Chọn kiểu khung hình</h1>
+        <p>Bố cục nào phù hợp với bạn hôm nay? ✨</p>
+        <div class="layouts">
+            <div class="layout-card selected" onclick="selectLayout('2', this)">
+                <div class="icon"><i class="fa-solid fa-film"></i></div>
+                <h3>Dải đôi</h3><p>2 ảnh kiểu film strip cổ điển</p>
+            </div>
+            <div class="layout-card" onclick="selectLayout('4', this)">
+                <span class="badge">POPULAR</span>
+                <div class="icon"><i class="fa-solid fa-camera-retro"></i></div>
+                <h3>Dải tứ</h3><p>4 ảnh dọc như photobooth thật</p>
+            </div>
+            <div class="layout-card" onclick="selectLayout('grid', this)">
+                <div class="icon"><i class="fa-solid fa-border-all"></i></div>
+                <h3>Lưới 2x2</h3><p>4 ảnh dạng polaroid vuông</p>
+            </div>
+        </div>
+        <button class="btn" onclick="startCameraPhase()">VÀO PHÒNG CHỤP <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+
+    <div class="screen capture-screen" id="screen-capture">
+        <h2 id="status-text">Tấm 1/4</h2>
+        <p style="color: var(--text-gray); margin-bottom: 10px; font-size: 13px;">Sẵn sàng tạo dáng nhé! 📷</p>
+        <div class="camera-container">
+            <video id="webcam" autoplay playsinline></video>
+            <div class="countdown" id="countdown">3</div>
+        </div>
+        <div class="photo-placeholders" id="placeholders"></div>
+        <div class="controls-grid">
+            <button class="btn-outline" onclick="switchCamera()"><i class="fa-solid fa-rotate"></i> ĐỔI CAMERA</button>
+            <button class="btn" id="btn-capture" style="width: 100%" onclick="startCapture()"><i class="fa-solid fa-camera"></i> BẮT ĐẦU CHỤP</button>
+            <button class="btn-outline" onclick="goToHome()"><i class="fa-solid fa-arrow-left"></i> QUAY LẠI</button>
+            <select class="btn-outline" id="countdown-select">
+                <option value="3">Đếm ngược: 3 giây</option>
+                <option value="5">Đếm ngược: 5 giây</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="screen select-screen" id="screen-select">
+        <h1>Chọn ảnh đẹp nhất</h1>
+        <p style="color: var(--text-gray); font-size: 14px;">Hoàn hảo! Bấm trang trí ngay.</p>
+        <div class="select-grid" id="select-grid"></div>
+        <div style="display: flex; gap: 20px;">
+            <button class="btn-outline" style="width: 160px; border-radius:30px;" onclick="startCameraPhase()"><i class="fa-solid fa-arrow-left"></i> CHỤP LẠI</button>
+            <button class="btn" id="btn-goto-decorate" style="width: 250px" onclick="buildDecorateScreen()" disabled>TRANG TRÍ ẢNH ✨</button>
+        </div>
+    </div>
+
+    <div class="screen decorate-screen" id="screen-decorate">
+        <div class="preview-area" id="preview-area">
+            <div class="photo-frame layout-2" id="final-frame">
+                <div class="frame-overlay"></div>
+                <canvas id="draw-layer"></canvas>
+                <div id="sticker-layer"></div>
+
+                <div class="photo-grid" id="photo-grid"></div>
+                <div class="frame-footer" id="frame-footer">
+                    <h3 id="footer-text">DEVPAN</h3>
+                    <p id="footer-date">31 tháng 5, 2026<br><span id="footer-logo">✦ DevPan STUDIO ✦</span></p>
+                    <div id="qr-code"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-solid fa-palette"></i> MÀU NỀN</div>
+                <div class="color-palette">
+                    <div class="color-btn active" style="background: #ffffff" onclick="changeBg('#ffffff', this)"></div>
+                    <div class="color-btn" style="background: #1a1a24" onclick="changeBg('#1a1a24', this)"></div>
+                    <div class="color-btn" style="background: #fcf4dd" onclick="changeBg('#fcf4dd', this)"></div>
+                    <div class="color-btn" style="background: #f9e4e8" onclick="changeBg('#f9e4e8', this)"></div>
+                    <div class="color-btn" style="background: #ffbba5" onclick="changeBg('#ffbba5', this)"></div>
+                    <div class="color-btn" style="background: #d4b4e1" onclick="changeBg('#d4b4e1', this)"></div>
+                    <div class="color-btn" style="background: #9cf0d1" onclick="changeBg('#9cf0d1', this)"></div>
+                    
+                    <div class="color-btn" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)" onclick="changeBg('linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', this)"></div>
+                    <div class="color-btn" style="background: #00e5ff" onclick="changeBg('#00e5ff', this)"></div>
+                    <div class="color-btn" style="background: linear-gradient(135deg, #f6d365 0%, #9cf0d1 100%)" onclick="changeBg('linear-gradient(135deg, #f6d365 0%, #9cf0d1 100%)', this)"></div>
+                    <div class="color-btn" style="background: #2b5876" onclick="changeBg('#2b5876', this)"></div>
+                    
+                    <div class="color-btn color-btn-add" onclick="document.getElementById('customColorPicker').click()"><i class="fa-solid fa-plus"></i></div>
+                    <input type="color" id="customColorPicker" style="display:none;" oninput="applyCustomColor(this.value)">
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-regular fa-square"></i> VIỀN KHUNG</div>
+                <div class="grid-4">
+                    <div class="icon-btn active" onclick="applyBorder('none', this)"><span>🚫</span>Không</div>
+                    <div class="icon-btn" onclick="applyBorder('chambi', this)"><span>💬</span>Chấm bi</div>
+                    <div class="icon-btn" onclick="applyBorder('song', this)"><span>〰️</span>Sóng</div>
+                    <div class="icon-btn" onclick="applyBorder('neon', this)"><span>💡</span>Neon</div>
+                    <div class="icon-btn" onclick="applyBorder('vintage', this)"><span>📻</span>Vintage</div>
+                    <div class="icon-btn" onclick="applyBorder('sao', this)"><span>⭐</span>Sao</div>
+                    <div class="icon-btn" onclick="applyBorder('tim', this)"><span>💖</span>Trái tim</div>
+                    <div class="icon-btn" onclick="applyBorder('hoa', this)"><span>🌸</span>Hoa</div>
+                    <div class="icon-btn" onclick="applyBorder('glitter', this)"><span>✨</span>Glitter</div>
+                    <div class="icon-btn" onclick="applyBorder('polaroid', this)"><span>🖼️</span>Polaroid</div>
+                    <div class="icon-btn" onclick="applyBorder('rainbow', this)"><span>🌈</span>Cầu vồng</div>
+                    <div class="icon-btn" onclick="applyBorder('confetti', this)"><span>🎊</span>Confetti</div>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-solid fa-sliders"></i> BỘ LỌC ẢNH</div>
+                <div class="grid-2">
+                    <button class="filter-btn active" onclick="applyFilter('grayscale(0)', this)"><div class="f-color" style="background: #b046ff"></div> Gốc</button>
+                    <button class="filter-btn" onclick="applyFilter('grayscale(100%)', this)"><div class="f-color" style="background: #666"></div> Trắng đen</button>
+                    <button class="filter-btn" onclick="applyFilter('sepia(80%)', this)"><div class="f-color" style="background: #a0522d"></div> Vintage</button>
+                    <button class="filter-btn" onclick="applyFilter('saturate(150%)', this)"><div class="f-color" style="background: #ff4500"></div> Rực rỡ</button>
+                    <button class="filter-btn" onclick="applyFilter('brightness(110%) contrast(90%)', this)"><div class="f-color" style="background: #87ceeb"></div> Mơ màng</button>
+                    <button class="filter-btn" onclick="applyFilter('contrast(80%) sepia(30%)', this)"><div class="f-color" style="background: #d3d3d3"></div> Sương mù</button>
+                    <button class="filter-btn" onclick="applyFilter('sepia(40%) saturate(140%) hue-rotate(-10deg)', this)"><div class="f-color" style="background: #ff8c00"></div> Bình minh</button>
+                    <button class="filter-btn" onclick="applyFilter('invert(80%)', this)"><div class="f-color" style="background: #2f4f4f"></div> Âm bản</button>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-regular fa-sun"></i> ĐIỀU CHỈNH SÁNG</div>
+                <div class="slider-group">
+                    <label><span>Độ sáng</span> <span id="br-val">100%</span></label>
+                    <input type="range" id="brightness" min="50" max="150" value="100" oninput="updateSliders()">
+                </div>
+                <div class="slider-group">
+                    <label><span>Tương phản</span> <span id="ct-val">100%</span></label>
+                    <input type="range" id="contrast" min="50" max="150" value="100" oninput="updateSliders()">
+                </div>
+                <div class="slider-group">
+                    <label><span>Bão hòa màu</span> <span id="sat-val">100%</span></label>
+                    <input type="range" id="saturation" min="0" max="200" value="100" oninput="updateSliders()">
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title">NHÃN DÁN</div>
+                <div class="sticker-grid">
+                    <span onclick="addSticker('🎀')">🎀</span>
+                    <span onclick="addSticker('✨')">✨</span>
+                    <span onclick="addSticker('💖')">💖</span>
+                    <span onclick="addSticker('🌈')">🌈</span>
+                    <span onclick="addSticker('🔥')">🔥</span>
+                    <span onclick="addSticker('👑')">👑</span>
+                    <span onclick="addSticker('🍀')">🍀</span>
+                    <span onclick="addSticker('⚡')">⚡</span>
+                    <span onclick="addSticker('🎵')">🎵</span>
+                    <span onclick="addSticker('🦋')">🦋</span>
+                    <span onclick="addSticker('🌙')">🌙</span>
+                    <span onclick="addSticker('🎊')">🎊</span>
+                </div>
+                <button class="upload-sticker-btn" onclick="document.getElementById('upload-sticker').click()"><i class="fa-solid fa-plus"></i> THÊM ẢNH TỪ MÁY</button>
+                <input type="file" id="upload-sticker" style="display:none;" accept="image/*" onchange="uploadImageSticker(event)">
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> CÔNG CỤ TRANG TRÍ</div>
+                <div class="grid-2">
+                    <button class="tool-btn active" onclick="setTool('select', this)"><i class="fa-solid fa-hand-pointer"></i> Chọn/Sửa</button>
+                    <button class="tool-btn" onclick="setTool('draw', this)"><i class="fa-solid fa-pen"></i> Vẽ tay</button>
+                    <button class="tool-btn" onclick="applyFunnyFilter(this)"><i class="fa-solid fa-face-smile-wink"></i> Méo mặt</button>
+                    <button class="tool-btn" onclick="addCustomTextSticker()"><i class="fa-solid fa-font"></i> Thêm chữ</button>
+                    <button class="tool-btn" onclick="setTool('delete', this)"><i class="fa-solid fa-trash-can"></i> Xóa icon</button>
+                    
+                    <div class="draw-options">
+                        <input type="color" id="draw-color" class="draw-color-btn" value="#ff5b99" title="Màu vẽ">
+                        <input type="range" id="draw-size" min="2" max="20" value="6" style="width: 40px;" oninput="document.getElementById('size-val').innerText=this.value+'px'">
+                        <span id="size-val" style="font-size: 10px; color: gray;">6px</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn btn-outline" style="border-radius: 8px;" onclick="undoDraw()"><i class="fa-solid fa-rotate-left"></i> HOÀN TÁC NÉT VẼ</button>
+                    <button class="action-btn btn-outline" style="border-radius: 8px;" onclick="clearAllDecorations()"><i class="fa-solid fa-trash"></i> XÓA HẾT TRANG TRÍ</button>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title"><i class="fa-solid fa-font"></i> LỜI NHẮN & THÔNG TIN</div>
+                <input type="text" id="footer-text-input" class="input-text" placeholder="Nhập lời nhắn..." value="Kỷ niệm mùa thu 🍂" oninput="updateFooterText()">
+                
+                <div class="grid-2" style="margin-top: 5px;">
+                    <button class="font-btn active" style="font-family: 'Syne';" onclick="changeFont('Syne', this)">Syne</button>
+                    <button class="font-btn" style="font-family: 'Playfair Display';" onclick="changeFont('Playfair Display', this)">Playfair</button>
+                    <button class="font-btn" style="font-family: 'Pacifico';" onclick="changeFont('Pacifico', this)">Pacifico</button>
+                    <button class="font-btn" style="font-family: 'Bebas Neue';" onclick="changeFont('Bebas Neue', this)">BEBAS</button>
+                    <button class="font-btn" style="font-family: 'Abril Fatface';" onclick="changeFont('Abril Fatface', this)">Abril</button>
+                    <button class="font-btn" style="font-family: 'Space Grotesk';" onclick="changeFont('Space Grotesk', this)">Grotesk</button>
+                    <button class="font-btn" style="font-family: 'Great Vibes';" onclick="changeFont('Great Vibes', this)">Elegant</button>
+                    <button class="font-btn" style="font-family: 'Source Code Pro';" onclick="changeFont('Source Code Pro', this)">Code</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="color" id="footer-color-picker" class="draw-color-btn" value="#000000" oninput="updateFooterTextColor(this.value)">
+                    <span style="font-size:11px; color:var(--text-gray);">Màu chữ (Dùng chung)</span>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px;">
+                    <span>Hiển thị ngày tháng</span>
+                    <label class="toggle-switch"><input type="checkbox" checked onchange="toggleEl('footer-date', this.checked)"><span class="slider-toggle"></span></label>
+                </div>
+                <div class="setting-row">
+                    <span>Hiển thị logo studio</span>
+                    <label class="toggle-switch"><input type="checkbox" checked onchange="toggleEl('footer-logo', this.checked)"><span class="slider-toggle"></span></label>
+                </div>
+                <div class="setting-row">
+                    <span>Mã QR tải ảnh</span>
+                    <label class="toggle-switch"><input type="checkbox" onchange="toggleEl('qr-code', this.checked)"><span class="slider-toggle"></span></label>
+                </div>
+            </div>
+
+            <button class="download-btn dl-png" id="btn-dl-png" onclick="downloadImage('png')"><i class="fa-solid fa-download"></i> LƯU ẢNH (.PNG)</button>
+            <button class="download-btn dl-jpg" id="btn-dl-jpg" onclick="downloadImage('jpeg')"><i class="fa-regular fa-image"></i> LƯU ẢNH (.JPG)</button>
+            <button class="download-btn" style="background: var(--btn-bg); border: 1px solid var(--border-color); color: var(--text-light);" onclick="goToHome()"><i class="fa-solid fa-rotate-left"></i> CHỤP LẠI TỪ ĐẦU</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedLayoutType = '2'; 
+    let photosToTake = 4;    
+    let photosRequired = 2;  
+    
+    let photosTaken = [];
+    let selectedIndices = [];
+    let stream = null;
+    let useFrontCamera = true;
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function selectLayout(type, el) {
+        selectedLayoutType = type;
+        if(type === '2') { photosToTake = 4; photosRequired = 2; } 
+        else { photosToTake = 6; photosRequired = 4; }
+        
+        document.querySelectorAll('.layout-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    function goToHome() { stopCamera(); showScreen('screen-home'); }
+
+    async function startCameraPhase() {
+        showScreen('screen-capture');
+        photosTaken = [];
+        document.getElementById('btn-capture').disabled = false;
+        
+        const placeholderContainer = document.getElementById('placeholders');
+        placeholderContainer.innerHTML = '';
+        for(let i=0; i<photosToTake; i++){
+            const box = document.createElement('div');
+            box.className = 'placeholder-box';
+            placeholderContainer.appendChild(box);
+        }
+
+        updateStatusText();
+        await initCamera();
+    }
+
+    async function initCamera() {
+        const video = document.getElementById('webcam');
+        try {
+            if(stream) stopCamera();
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? "user" : "environment" } });
+            video.srcObject = stream;
+            video.style.transform = useFrontCamera ? "scaleX(-1)" : "scaleX(1)";
+        } catch (err) { 
+            console.log("Dùng camera giả lập để test trang trí.");
+        }
+    }
+
+    async function switchCamera() { useFrontCamera = !useFrontCamera; await initCamera(); }
+    function stopCamera() { if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; } }
+    function updateStatusText() { document.getElementById('status-text').innerText = `Tấm ${photosTaken.length + 1}/${photosToTake}`; }
+
+    async function startCapture() {
+        document.getElementById('btn-capture').disabled = true;
+        const countdownTime = parseInt(document.getElementById('countdown-select').value);
+        
+        for (let i = 0; i < photosToTake; i++) {
+            updateStatusText();
+            await waitCountdown(countdownTime);
+            takeSnapshot(i);
+        }
+        
+        stopCamera();
+        buildSelectScreen(); 
+    }
+
+    function waitCountdown(seconds) {
+        return new Promise(resolve => {
+            const cdEl = document.getElementById('countdown');
+            cdEl.style.display = 'block';
+            let left = seconds; cdEl.innerText = left;
+            let interval = setInterval(() => {
+                left--;
+                if (left > 0) { cdEl.innerText = left; } 
+                else { clearInterval(interval); cdEl.style.display = 'none'; resolve(); }
+            }, 1000);
+        });
+    }
+
+    function takeSnapshot(index) {
+        const video = document.getElementById('webcam');
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; canvas.height = 480; 
+        const ctx = canvas.getContext('2d');
+        
+        if(stream) {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            if (useFrontCamera) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = `hsl(${Math.random()*360}, 70%, 50%)`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        photosTaken.push(dataUrl);
+        document.querySelectorAll('.placeholder-box')[index].style.backgroundImage = `url(${dataUrl})`;
+    }
+
+    function buildSelectScreen() {
+        showScreen('screen-select');
+        const grid = document.getElementById('select-grid');
+        grid.innerHTML = '';
+        selectedIndices = [];
+        updateDecorateBtn();
+
+        photosTaken.forEach((imgData, index) => {
+            const div = document.createElement('div');
+            div.className = 'select-item';
+            div.onclick = () => toggleSelection(index, div);
+            const img = document.createElement('img'); img.src = imgData;
+            const badge = document.createElement('div'); badge.className = 'badge-select';
+            div.appendChild(img); div.appendChild(badge);
+            grid.appendChild(div);
+        });
+    }
+
+    function toggleSelection(index, el) {
+        const pos = selectedIndices.indexOf(index);
+        if(pos > -1) {
+            selectedIndices.splice(pos, 1); el.classList.remove('selected');
+        } else {
+            if(selectedIndices.length < photosRequired) { selectedIndices.push(index); el.classList.add('selected'); }
+        }
+        const items = document.querySelectorAll('.select-item');
+        selectedIndices.forEach((selIdx, i) => { items[selIdx].querySelector('.badge-select').innerText = i + 1; });
+        updateDecorateBtn();
+    }
+    function updateDecorateBtn() { document.getElementById('btn-goto-decorate').disabled = (selectedIndices.length !== photosRequired); }
+
+    function buildDecorateScreen() {
+        showScreen('screen-decorate');
+        const frame = document.getElementById('final-frame');
+        const grid = document.getElementById('photo-grid');
+        
+        frame.className = 'photo-frame'; 
+        if (selectedLayoutType === '2') frame.classList.add('layout-2');
+        if (selectedLayoutType === '4') frame.classList.add('layout-4');
+        if (selectedLayoutType === 'grid') frame.classList.add('layout-grid');
+
+        clearAllDecorations();
+        changeBg('white', document.querySelector('.color-btn'));
+        applyFilter('grayscale(0)', document.querySelector('.filter-btn'));
+        applyBorder('none', document.querySelector('.border-btn'));
+        
+        document.getElementById('brightness').value = 100;
+        document.getElementById('contrast').value = 100;
+        document.getElementById('saturation').value = 100;
+        updateSliders();
+        isFunnyFilter = false; applyFunnyFilter(null, true);
+
+        document.getElementById('footer-text').innerText = document.getElementById('footer-text-input').value;
+        updateFooterDateDisplay();
+        ensureFooterDateLive();
+
+        document.getElementById('qr-code').innerHTML = '';
+        new QRCode(document.getElementById("qr-code"), { text: "https://devpan.studio", width: 30, height: 30 });
+
+        grid.innerHTML = '';
+        selectedIndices.forEach(idx => {
+            const imgData = photosTaken[idx];
+            const div = document.createElement('div'); div.className = 'photo-item';
+            const img = document.createElement('img'); img.src = imgData;
+            img.crossOrigin = "anonymous"; 
+            div.appendChild(img); grid.appendChild(div);
+        });
+
+        setTimeout(() => {
+            initDrawCanvas();
+            setTool('select', document.querySelector('.tool-btn')); 
+        }, 100);
+    }
+
+    function changeBg(color, btnEl) {
+        const frame = document.getElementById('final-frame');
+
+        frame.style.background = color;
+        
+        let textColor = 'black';
+        if (color.includes('gradient')) {
+            textColor = color.includes('fcf4dd') ? 'black' : 'white'; 
+        } else if(color === 'black' || color === '#000000' || color === '#1a1a24' || color === '#2b5876') {
+            textColor = 'white';
+        } else if(color.startsWith('#')) {
+            let hex = color.replace('#', '');
+            if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]; 
+            let r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+            if (((r * 299 + g * 587 + b * 114) / 1000) < 128) textColor = 'white'; 
+        }
+        
+        frame.querySelector('.frame-footer').style.color = textColor;
+        document.getElementById('footer-color-picker').value = textColor === 'white' ? '#ffffff' : '#000000';
+        
+        if(btnEl) {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+        }
+    }
+
+    function applyCustomColor(hexColor) {
+        const addBtn = document.querySelector('.color-btn-add');
+        addBtn.style.background = hexColor; 
+        changeBg(hexColor, addBtn); 
+    }
+
+    function applyBorder(borderName, btnEl) {
+        const frame = document.getElementById('final-frame');
+        frame.className = frame.className.replace(/\bborder-\S+/g, '');
+        if(borderName !== 'none') frame.classList.add('border-' + borderName);
+        if(btnEl) { document.querySelectorAll('.border-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active'); }
+    }
+
+    function applyFilter(filterString, btnEl) { 
+        document.documentElement.style.setProperty('--custom-filter', filterString);
+        if(btnEl) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btnEl.classList.add('active'); }
+    }
+
+    function updateSliders() {
+        const br = document.getElementById('brightness').value;
+        const ct = document.getElementById('contrast').value;
+        const sat = document.getElementById('saturation').value;
+        
+        document.getElementById('br-val').innerText = br + '%';
+        document.getElementById('ct-val').innerText = ct + '%';
+        document.getElementById('sat-val').innerText = sat + '%';
+        
+        document.documentElement.style.setProperty('--br', br + '%');
+        document.documentElement.style.setProperty('--ct', ct + '%');
+        document.documentElement.style.setProperty('--sat', sat + '%');
+    }
+
+    let isFunnyFilter = false;
+    function applyFunnyFilter(btnEl, reset=false) {
+        if(reset) isFunnyFilter = false; else isFunnyFilter = !isFunnyFilter;
+        document.documentElement.style.setProperty('--funny-filter', isFunnyFilter ? 'hue-rotate(90deg) saturate(200%)' : 'grayscale(0)');
+        if(btnEl) isFunnyFilter ? btnEl.classList.add('active') : btnEl.classList.remove('active');
+    }
+
+    let footerDateTimer = null;
+    function getFooterDateString() {
+        const today = new Date();
+        return `${today.getDate()} tháng ${today.getMonth() + 1}, ${today.getFullYear()}`;
+    }
+    function updateFooterDateDisplay() {
+        document.getElementById('footer-date').innerHTML = getFooterDateString();
+    }
+    function ensureFooterDateLive() {
+        updateFooterDateDisplay();
+        if (footerDateTimer) return;
+        footerDateTimer = setInterval(updateFooterDateDisplay, 60000);
+    }
+    function updateFooterText() { document.getElementById('footer-text').innerText = document.getElementById('footer-text-input').value; }
+    function changeFont(fontName, btnEl) {
+        document.getElementById('footer-text').style.fontFamily = fontName;
+        document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+    }
+    function updateFooterTextColor(color) {
+        document.getElementById('frame-footer').style.color = color;
+    }
+    function toggleEl(id, isShow) { document.getElementById(id).style.display = isShow ? 'block' : 'none'; }
+
+    let currentTool = 'select'; 
+    function setTool(tool, btnEl) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(b => { if(!b.innerHTML.includes('Méo mặt')) b.classList.remove('active')});
+        if(btnEl) btnEl.classList.add('active');
+
+        const drawLayer = document.getElementById('draw-layer');
+        const stickerLayer = document.getElementById('sticker-layer');
+        
+        if (tool === 'draw') {
+            drawLayer.style.pointerEvents = 'auto';
+            stickerLayer.style.pointerEvents = 'none';
+        } else {
+            drawLayer.style.pointerEvents = 'none';
+            stickerLayer.style.pointerEvents = 'auto';
+        }
+    }
+
+    function addSticker(content, isImage = false, isText = false) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sticker-wrapper';
+        wrapper.style.left = '50%'; wrapper.style.top = '50%';
+        wrapper.dataset.scale = 1;
+        
+        const inner = document.createElement('div');
+        if(isImage) {
+            const img = document.createElement('img'); img.src = content; img.style.width = '60px'; inner.appendChild(img);
+        } else if (isText) {
+            inner.innerText = content;
+            inner.style.fontFamily = document.getElementById('footer-text').style.fontFamily;
+            inner.style.color = document.getElementById('draw-color').value;
+            inner.style.fontSize = '24px'; inner.style.fontWeight = 'bold';
+        } else {
+            inner.innerText = content; inner.style.fontSize = '40px';
+        }
+        
+        const delBtn = document.createElement('div'); delBtn.className = 'sticker-action del-btn'; delBtn.innerHTML = '✖';
+        const resBtn = document.createElement('div'); resBtn.className = 'sticker-action res-btn'; resBtn.innerHTML = '⤡';
+
+        delBtn.onclick = (e) => { e.stopPropagation(); wrapper.remove(); };
+
+        wrapper.appendChild(inner); wrapper.appendChild(delBtn); wrapper.appendChild(resBtn);
+        document.getElementById('sticker-layer').appendChild(wrapper);
+
+        makeInteractable(wrapper, resBtn);
+        setTool('select', document.querySelectorAll('.tool-btn')[0]); 
+    }
+
+    function uploadImageSticker(e) {
+        const file = e.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => addSticker(ev.target.result, true, false);
+        reader.readAsDataURL(file);
+    }
+
+    function addCustomTextSticker() {
+        const txt = prompt("Nhập chữ bạn muốn chèn:", "Love");
+        if(txt) addSticker(txt, false, true);
+    }
+
+    function makeInteractable(wrapper, resBtn) {
+        let isDragging = false, isResizing = false;
+        let startX, startY, initLeft, initTop, initScale;
+
+        const startAction = (e, action) => {
+            if(currentTool === 'delete') { wrapper.remove(); return; }
+            if(currentTool !== 'select') return;
+            
+            document.querySelectorAll('.sticker-wrapper').forEach(w => w.classList.remove('active-sticker'));
+            wrapper.classList.add('active-sticker');
+            
+            startX = e.clientX || (e.touches && e.touches[0].clientX);
+            startY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            if(action === 'drag' && e.target !== resBtn && !e.target.classList.contains('del-btn')) {
+                isDragging = true; initLeft = wrapper.offsetLeft; initTop = wrapper.offsetTop;
+            } else if (action === 'resize') {
+                isResizing = true; initScale = parseFloat(wrapper.dataset.scale);
+            }
+            e.preventDefault(); e.stopPropagation();
+        };
+
+        wrapper.addEventListener('mousedown', (e) => startAction(e, 'drag'));
+        resBtn.addEventListener('mousedown', (e) => startAction(e, 'resize'));
+
+        const moveAction = (e) => {
+            if(!isDragging && !isResizing) return;
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            if(isDragging) {
+                wrapper.style.left = (initLeft + x - startX) + 'px';
+                wrapper.style.top = (initTop + y - startY) + 'px';
+            }
+            if(isResizing) {
+                let s = initScale + ((x - startX) + (y - startY)) * 0.01;
+                if (s < 0.2) s = 0.2;
+                wrapper.dataset.scale = s;
+                wrapper.style.transform = `translate(-50%, -50%) scale(${s})`;
+            }
+        };
+
+        const endAction = () => { isDragging = false; isResizing = false; };
+        document.addEventListener('mousemove', moveAction);
+        document.addEventListener('mouseup', endAction);
+        
+        wrapper.addEventListener('wheel', (e) => {
+            if(currentTool !== 'select') return;
+            e.preventDefault();
+            let s = parseFloat(wrapper.dataset.scale);
+            s += e.deltaY * -0.001; 
+            if (s < 0.2) s = 0.2;
+            wrapper.dataset.scale = s;
+            wrapper.style.transform = `translate(-50%, -50%) scale(${s})`;
+        });
+    }
+
+    let canvasDraw, ctxDraw;
+    let isDrawing = false;
+    let drawPaths = []; 
+    let currentPath = [];
+    let isDrawEventsBound = false;
+
+    function initDrawCanvas() {
+        canvasDraw = document.getElementById('draw-layer');
+        const frame = document.getElementById('final-frame');
+        
+        canvasDraw.width = frame.offsetWidth;
+        canvasDraw.height = frame.offsetHeight;
+        ctxDraw = canvasDraw.getContext('2d');
+        ctxDraw.lineCap = 'round'; ctxDraw.lineJoin = 'round';
+
+        if (!isDrawEventsBound) {
+            canvasDraw.addEventListener('mousedown', startDraw);
+            canvasDraw.addEventListener('mousemove', drawMove);
+            window.addEventListener('mouseup', endDraw);
+            isDrawEventsBound = true;
+        }
+        redrawPaths();
+    }
+
+    function startDraw(e) {
+        if(currentTool !== 'draw') return;
+        isDrawing = true; currentPath = [];
+        const rect = canvasDraw.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        
+        ctxDraw.beginPath(); ctxDraw.moveTo(x, y);
+        const color = document.getElementById('draw-color').value;
+        const size = document.getElementById('draw-size').value;
+        currentPath.push({x, y, color, size});
+    }
+
+    function drawMove(e) {
+        if(!isDrawing || currentTool !== 'draw') return;
+        const rect = canvasDraw.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        
+        const color = document.getElementById('draw-color').value;
+        const size = document.getElementById('draw-size').value;
+        
+        ctxDraw.lineTo(x, y);
+        ctxDraw.strokeStyle = color; ctxDraw.lineWidth = size;
+        ctxDraw.stroke();
+        currentPath.push({x, y, color, size});
+    }
+
+    function endDraw() { 
+        if(isDrawing) { isDrawing = false; drawPaths.push([...currentPath]); } 
+    }
+
+    function redrawPaths() {
+        ctxDraw.clearRect(0,0, canvasDraw.width, canvasDraw.height);
+        drawPaths.forEach(path => {
+            if(path.length === 0) return;
+            ctxDraw.beginPath(); ctxDraw.moveTo(path[0].x, path[0].y);
+            for(let i=1; i<path.length; i++) {
+                ctxDraw.lineTo(path[i].x, path[i].y);
+                ctxDraw.strokeStyle = path[i].color; ctxDraw.lineWidth = path[i].size;
+                ctxDraw.stroke();
+            }
+        });
+    }
+
+    function undoDraw() { if(drawPaths.length > 0) { drawPaths.pop(); redrawPaths(); } }
+    function clearAllDecorations() { 
+        if(ctxDraw) { ctxDraw.clearRect(0,0, canvasDraw.width, canvasDraw.height); drawPaths = []; }
+        document.getElementById('sticker-layer').innerHTML = ''; 
+    }
+
+    function downloadImage(format = 'png') {
+        const frame = document.getElementById('final-frame');
+        const btnId = format === 'png' ? 'btn-dl-png' : 'btn-dl-jpg';
+        const btn = document.getElementById(btnId);
+        const oldText = btn.innerHTML;
+        btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> ĐANG XỬ LÝ...";
+        btn.disabled = true;
+
+        document.querySelectorAll('.sticker-wrapper').forEach(w => w.classList.remove('active-sticker'));
+        document.getElementById('sticker-layer').style.pointerEvents = 'none';
+
+        html2canvas(frame, { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'DuyMan_Studio_' + new Date().getTime() + '.' + (format === 'png'?'png':'jpg');
+            link.href = canvas.toDataURL('image/' + format, 0.9);
+            link.click();
+            btn.innerHTML = oldText; btn.disabled = false;
+            if(currentTool === 'select') document.getElementById('sticker-layer').style.pointerEvents = 'auto';
+        }).catch(err => {
+            alert("Lỗi tải ảnh! Cần chạy ở Localhost để không bị chặn bảo mật trình duyệt.");
+            btn.innerHTML = oldText; btn.disabled = false;
+        });
+    }
+</script>
+
+</body>
+</html>
