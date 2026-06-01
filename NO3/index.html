@@ -1044,63 +1044,56 @@
         document.querySelectorAll('.sticker-wrapper').forEach(w => w.classList.remove('active-sticker'));
         document.getElementById('sticker-layer').style.pointerEvents = 'none';
 
+        // 1. Đo đạc KÍCH THƯỚC THẬT của khung và TỪNG TẤM ẢNH trên màn hình điện thoại
+        const rect = frame.getBoundingClientRect();
+        const origItems = frame.querySelectorAll('.photo-item');
+        const itemSizes = Array.from(origItems).map(item => {
+            const r = item.getBoundingClientRect();
+            return { w: r.width, h: r.height }; // Lưu lại chiều cao, rộng chuẩn xác từng pixel
+        });
+
         setTimeout(() => {
-            // 1. ĐO ĐẠC KÍCH THƯỚC TRỰC TIẾP TỪ MÀN HÌNH ĐIỆN THOẠI
-            const rect = frame.getBoundingClientRect();
-            
-            // Lưu lại style gốc để sau khi chụp thì trả lại nguyên vẹn
-            const originalStyles = {
-                width: frame.style.width,
-                height: frame.style.height,
-                maxWidth: frame.style.maxWidth
-            };
-
-            // 2. ÉP CỨNG KHUNG NGOÀI (Khóa chết padding, không cho phình to)
-            frame.style.width = rect.width + 'px';
-            frame.style.height = rect.height + 'px';
-            frame.style.maxWidth = 'none'; 
-
-            // 3. ÉP CỨNG TỪNG TẤM ẢNH BÊN TRONG (Không cho méo hay thu hẹp)
-            const items = frame.querySelectorAll('.photo-item');
-            const itemStyles = [];
-            items.forEach(item => {
-                const itemRect = item.getBoundingClientRect();
-                itemStyles.push({
-                    width: item.style.width,
-                    height: item.style.height,
-                    aspectRatio: item.style.aspectRatio
-                });
-                item.style.width = itemRect.width + 'px';
-                item.style.height = itemRect.height + 'px';
-                item.style.aspectRatio = 'unset'; 
-            });
-
-            // 4. CHỐT BỘ LỌC MÀU (FILTERS)
-            const rootStyle = window.getComputedStyle(document.documentElement);
-            const br = rootStyle.getPropertyValue('--br').trim() || '100%';
-            const ct = rootStyle.getPropertyValue('--ct').trim() || '100%';
-            const sat = rootStyle.getPropertyValue('--sat').trim() || '100%';
-            const customFilter = rootStyle.getPropertyValue('--custom-filter').trim() || 'grayscale(0)';
-            const funnyFilter = rootStyle.getPropertyValue('--funny-filter').trim() || 'grayscale(0)';
-            const compiledFilter = `brightness(${br}) contrast(${ct}) saturate(${sat}) ${customFilter} ${funnyFilter}`;
-
-            const images = frame.querySelectorAll('.photo-item img');
-            const imgOriginalFilters = [];
-            images.forEach(img => {
-                imgOriginalFilters.push(img.style.filter);
-                img.style.filter = compiledFilter;
-            });
-
-            // 5. BẮT ĐẦU CHỤP (Lúc này giao diện đã bị khóa cứng bằng Pixel)
             html2canvas(frame, {
-                scale: 3, // Giữ độ phân giải cực nét
+                scale: 3, // Giữ độ nét cao
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: null,
-                width: rect.width,
-                height: rect.height,
-                windowWidth: document.documentElement.clientWidth,
-                windowHeight: document.documentElement.clientHeight
+                onclone: (clonedDoc) => {
+                    const clonedFrame = clonedDoc.getElementById('final-frame');
+                    
+                    // 2. TRÓI CHẶT KHUNG TỔNG: Ép nó thành 1 cục block chết kích thước
+                    clonedFrame.style.width = rect.width + 'px';
+                    clonedFrame.style.height = rect.height + 'px';
+                    clonedFrame.style.maxWidth = 'none';
+                    clonedFrame.style.maxHeight = 'none';
+                    clonedFrame.style.overflow = 'hidden'; // Cắt phăng mọi thứ html2canvas tự vẽ tràn ra
+                    clonedFrame.style.margin = '0';
+                    clonedFrame.style.transform = 'none';
+                    
+                    // 3. TRÓI CHẶT ẢNH CON: Tắt aspect-ratio, ép chiều cao bằng đúng số liệu đã đo
+                    const cloneItems = clonedFrame.querySelectorAll('.photo-item');
+                    cloneItems.forEach((item, index) => {
+                        item.style.width = itemSizes[index].w + 'px';
+                        item.style.height = itemSizes[index].h + 'px';
+                        item.style.minHeight = itemSizes[index].h + 'px';
+                        item.style.maxHeight = itemSizes[index].h + 'px';
+                        item.style.aspectRatio = 'unset'; // Khử dứt điểm lỗi tự kéo dài ảnh
+                        item.style.flex = 'none';
+                    });
+
+                    // 4. Giữ nguyên màu sắc (Filter)
+                    const rootStyle = window.getComputedStyle(document.documentElement);
+                    const br = rootStyle.getPropertyValue('--br').trim() || '100%';
+                    const ct = rootStyle.getPropertyValue('--ct').trim() || '100%';
+                    const sat = rootStyle.getPropertyValue('--sat').trim() || '100%';
+                    const customFilter = rootStyle.getPropertyValue('--custom-filter').trim() || 'grayscale(0)';
+                    const funnyFilter = rootStyle.getPropertyValue('--funny-filter').trim() || 'grayscale(0)';
+                    const compiledFilter = `brightness(${br}) contrast(${ct}) saturate(${sat}) ${customFilter} ${funnyFilter}`;
+
+                    clonedFrame.querySelectorAll('.photo-item img').forEach(img => {
+                        img.style.filter = compiledFilter;
+                    });
+                }
             }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = 'DuyMan_Studio_' + new Date().getTime() + '.' + (format === 'png' ? 'png' : 'jpg');
@@ -1110,21 +1103,6 @@
                 alert("Lỗi tải ảnh! Vui lòng thử lại.");
                 console.error(err);
             }).finally(() => {
-                // 6. TRẢ LẠI GIAO DIỆN VỀ TRẠNG THÁI CO GIÃN BAN ĐẦU
-                frame.style.width = originalStyles.width;
-                frame.style.height = originalStyles.height;
-                frame.style.maxWidth = originalStyles.maxWidth;
-
-                items.forEach((item, index) => {
-                    item.style.width = itemStyles[index].width;
-                    item.style.height = itemStyles[index].height;
-                    item.style.aspectRatio = itemStyles[index].aspectRatio;
-                });
-
-                images.forEach((img, index) => {
-                    img.style.filter = imgOriginalFilters[index];
-                });
-
                 btn.innerHTML = oldText;
                 btn.disabled = false;
                 document.getElementById('sticker-layer').style.pointerEvents = 'auto';
