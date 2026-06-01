@@ -1036,40 +1036,67 @@
         const btnId = format === 'png' ? 'btn-dl-png' : 'btn-dl-jpg';
         const btn = document.getElementById(btnId);
         const oldText = btn.innerHTML;
+        
+        // Hiển thị trạng thái loading
         btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> ĐANG XỬ LÝ...";
         btn.disabled = true;
 
+        // Bỏ focus của các sticker để viền đứt nét không bị dính vào ảnh tải về
         document.querySelectorAll('.sticker-wrapper').forEach(w => w.classList.remove('active-sticker'));
         document.getElementById('sticker-layer').style.pointerEvents = 'none';
 
-        const exportWidth = Math.round(frame.offsetWidth);
-        const exportHeight = Math.round(frame.offsetHeight);
-        const exportScale = window.devicePixelRatio || 1;
+        // Đợi 150ms để trình duyệt kịp cập nhật UI (ẩn viền sticker) trước khi chụp
+        setTimeout(() => {
+            // Lấy kích thước thực tế CHÍNH XÁC của frame trên màn hình hiện tại
+            const rect = frame.getBoundingClientRect();
 
-        html2canvas(frame, {
-            scale: exportScale,
-            width: exportWidth,
-            height: exportHeight,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
-            imageTimeout: 15000,
-            scrollX: -window.scrollX,
-            scrollY: -window.scrollY,
-            windowWidth: document.documentElement.clientWidth,
-            windowHeight: document.documentElement.clientHeight
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'DuyMan_Studio_' + new Date().getTime() + '.' + (format === 'png'?'png':'jpg');
-            link.href = canvas.toDataURL('image/' + format, 0.9);
-            link.click();
-        }).catch(err => {
-            alert("Lỗi tải ảnh! Cần chạy ở Localhost để không bị chặn bảo mật trình duyệt.");
-        }).finally(() => {
-            btn.innerHTML = oldText;
-            btn.disabled = false;
-            document.getElementById('sticker-layer').style.pointerEvents = 'auto';
-        }); 
+            html2canvas(frame, {
+                scale: 3, // Tăng scale lên 3 để ảnh tải về siêu nét (như file gốc)
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null, // Giữ nền trong suốt cho các viền bo góc
+                width: rect.width,     // Ép cứng chiều rộng
+                height: rect.height,   // Ép cứng chiều cao
+                onclone: (clonedDoc) => {
+                    const clonedFrame = clonedDoc.getElementById('final-frame');
+                    
+                    // ĐÓNG BĂNG KÍCH THƯỚC: Gỡ bỏ các thuộc tính responsive gây xô lệch layout
+                    clonedFrame.style.width = rect.width + 'px';
+                    clonedFrame.style.height = rect.height + 'px';
+                    clonedFrame.style.maxWidth = 'none'; 
+                    clonedFrame.style.margin = '0';
+                    clonedFrame.style.transform = 'none';
+
+                    // FIX LỖI MẤT BỘ LỌC (FILTER): html2canvas không hiểu biến CSS (var)
+                    // Nên ta phải lấy giá trị thật và gán cứng lại cho bản clone
+                    const style = getComputedStyle(document.documentElement);
+                    const br = style.getPropertyValue('--br').trim() || '100%';
+                    const ct = style.getPropertyValue('--ct').trim() || '100%';
+                    const sat = style.getPropertyValue('--sat').trim() || '100%';
+                    const customFilter = style.getPropertyValue('--custom-filter').trim() || 'grayscale(0)';
+                    const funnyFilter = style.getPropertyValue('--funny-filter').trim() || 'grayscale(0)';
+                    const compiledFilter = `brightness(${br}) contrast(${ct}) saturate(${sat}) ${customFilter} ${funnyFilter}`;
+
+                    const images = clonedFrame.querySelectorAll('.photo-item img');
+                    images.forEach(img => {
+                        img.style.filter = compiledFilter;
+                    });
+                }
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'DuyMan_Studio_' + new Date().getTime() + '.' + (format === 'png' ? 'png' : 'jpg');
+                link.href = canvas.toDataURL('image/' + format, 1.0);
+                link.click();
+            }).catch(err => {
+                alert("Lỗi tải ảnh! Vui lòng đảm bảo bạn đang chạy web trên Localhost hoặc HTTPS.");
+                console.error(err);
+            }).finally(() => {
+                // Khôi phục lại trạng thái ban đầu của nút bấm
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+                document.getElementById('sticker-layer').style.pointerEvents = 'auto';
+            });
+        }, 150); 
     }
 </script>
 
