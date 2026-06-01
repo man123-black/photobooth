@@ -361,8 +361,8 @@
 
                 <div class="photo-grid" id="photo-grid"></div>
                 <div class="frame-footer" id="frame-footer">
-                    <h3 id="footer-text">DEVPAN</h3>
-                    <p id="footer-date">31 tháng 5, 2026<br><span id="footer-logo">✦ DevPan STUDIO ✦</span></p>
+                    <h3 id="footer-text">DUYMAN</h3>
+                    <p id="footer-date">31 tháng 5, 2026<br><span id="footer-logo">✦ DuyMan STUDIO ✦</span></p>
                     <div id="qr-code"></div>
                 </div>
             </div>
@@ -772,7 +772,10 @@
         return `${today.getDate()} tháng ${today.getMonth() + 1}, ${today.getFullYear()}`;
     }
     function updateFooterDateDisplay() {
-        document.getElementById('footer-date').innerHTML = getFooterDateString();
+        const dateEl = document.getElementById('footer-date');
+        const logoEl = document.getElementById('footer-logo');
+        const logoHtml = logoEl ? `<br>${logoEl.outerHTML}` : '';
+        dateEl.innerHTML = getFooterDateString() + logoHtml;
     }
     function ensureFooterDateLive() {
         updateFooterDateDisplay();
@@ -1039,17 +1042,22 @@
         document.querySelectorAll('.sticker-wrapper').forEach(w => w.classList.remove('active-sticker'));
         document.getElementById('sticker-layer').style.pointerEvents = 'none';
 
-        const frameRect = frame.getBoundingClientRect();
-        const exportScale = Math.max(2, window.devicePixelRatio || 1);
+        const exportWidth = Math.round(frame.offsetWidth);
+        const exportHeight = Math.round(frame.offsetHeight);
+        const exportScale = window.devicePixelRatio || 1;
 
         html2canvas(frame, {
             scale: exportScale,
-            width: frameRect.width,
-            height: frameRect.height,
+            width: exportWidth,
+            height: exportHeight,
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
-            imageTimeout: 15000
+            imageTimeout: 15000,
+            scrollX: -window.scrollX,
+            scrollY: -window.scrollY,
+            windowWidth: document.documentElement.clientWidth,
+            windowHeight: document.documentElement.clientHeight
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = 'DuyMan_Studio_' + new Date().getTime() + '.' + (format === 'png'?'png':'jpg');
