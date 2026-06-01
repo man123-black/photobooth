@@ -181,7 +181,7 @@
         .sticker-wrapper {
             position: absolute; display: inline-block; user-select: none;
             border: 1.5px dashed transparent; padding: 4px; cursor: grab;
-            transform: translate(-50%, -50%) scale(1); transition: border 0.2s; touch-action: none;
+            transform: translate(-50%, -50%) scale(1) rotate(0deg); transition: border 0.2s; touch-action: none;
         }
         .sticker-wrapper.active-sticker, .sticker-wrapper:hover { border-color: rgba(176, 70, 255, 0.8); z-index: 100;}
         .sticker-action {
@@ -193,6 +193,7 @@
         .sticker-wrapper.active-sticker .sticker-action, .sticker-wrapper:hover .sticker-action { display: flex; }
         .del-btn { top: -10px; right: -10px; color: #ff3b30; font-weight: bold;}
         .res-btn { bottom: -10px; right: -10px; cursor: nwse-resize; background: var(--secondary); color: white;}
+        .rot-btn { bottom: -10px; left: -10px; cursor: grab; background: #00e5ff; color: white;}
 
         .sidebar { width: 360px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; padding-right: 12px; }
         .sidebar::-webkit-scrollbar { width: 5px; }
@@ -812,6 +813,7 @@
         wrapper.className = 'sticker-wrapper';
         wrapper.style.left = '50%'; wrapper.style.top = '50%';
         wrapper.dataset.scale = 1;
+        wrapper.dataset.rotation = 0;
         
         const inner = document.createElement('div');
         if(isImage) {
@@ -827,13 +829,14 @@
         
         const delBtn = document.createElement('div'); delBtn.className = 'sticker-action del-btn'; delBtn.innerHTML = '✖';
         const resBtn = document.createElement('div'); resBtn.className = 'sticker-action res-btn'; resBtn.innerHTML = '⤡';
+        const rotBtn = document.createElement('div'); rotBtn.className = 'sticker-action rot-btn'; rotBtn.innerHTML = '⟳';
 
         delBtn.onclick = (e) => { e.stopPropagation(); wrapper.remove(); };
 
-        wrapper.appendChild(inner); wrapper.appendChild(delBtn); wrapper.appendChild(resBtn);
+        wrapper.appendChild(inner); wrapper.appendChild(delBtn); wrapper.appendChild(resBtn); wrapper.appendChild(rotBtn);
         document.getElementById('sticker-layer').appendChild(wrapper);
 
-        makeInteractable(wrapper, resBtn);
+        makeInteractable(wrapper, resBtn, rotBtn);
         setTool('select', document.querySelectorAll('.tool-btn')[0]); 
     }
 
@@ -849,9 +852,9 @@
         if(txt) addSticker(txt, false, true);
     }
 
-    function makeInteractable(wrapper, resBtn) {
-        let isDragging = false, isResizing = false;
-        let startX, startY, initLeft, initTop, initScale;
+    function makeInteractable(wrapper, resBtn, rotBtn) {
+        let isDragging = false, isResizing = false, isRotating = false;
+        let startX, startY, initLeft, initTop, initScale, initRotation, centerX, centerY;
 
         const startAction = (e, action) => {
             if(currentTool === 'delete') { wrapper.remove(); return; }
@@ -863,10 +866,17 @@
             startX = e.clientX || (e.touches && e.touches[0].clientX);
             startY = e.clientY || (e.touches && e.touches[0].clientY);
             
-            if(action === 'drag' && e.target !== resBtn && !e.target.classList.contains('del-btn')) {
+            if(action === 'drag' && e.target !== resBtn && e.target !== rotBtn && !e.target.classList.contains('del-btn')) {
                 isDragging = true; initLeft = wrapper.offsetLeft; initTop = wrapper.offsetTop;
             } else if (action === 'resize') {
                 isResizing = true; initScale = parseFloat(wrapper.dataset.scale);
+            } else if (action === 'rotate') {
+                isRotating = true;
+                initScale = parseFloat(wrapper.dataset.scale);
+                initRotation = parseFloat(wrapper.dataset.rotation) || 0;
+                const rect = wrapper.getBoundingClientRect();
+                centerX = rect.left + rect.width / 2;
+                centerY = rect.top + rect.height / 2;
             }
             e.stopPropagation(); // Xoá preventDefault ở đây để di động vẫn click được bình thường
         };
@@ -874,12 +884,14 @@
         // Bắt sự kiện trên PC
         wrapper.addEventListener('mousedown', (e) => startAction(e, 'drag'));
         resBtn.addEventListener('mousedown', (e) => startAction(e, 'resize'));
+        rotBtn.addEventListener('mousedown', (e) => startAction(e, 'rotate'));
         // Bắt sự kiện trên Mobile
         wrapper.addEventListener('touchstart', (e) => startAction(e, 'drag'));
         resBtn.addEventListener('touchstart', (e) => startAction(e, 'resize'));
+        rotBtn.addEventListener('touchstart', (e) => startAction(e, 'rotate'));
 
         const moveAction = (e) => {
-            if(!isDragging && !isResizing) return;
+            if(!isDragging && !isResizing && !isRotating) return;
             e.preventDefault(); // Ngăn cuộn trang web khi đang kéo thả trên điện thoại
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
@@ -892,11 +904,21 @@
                 let s = initScale + ((x - startX) + (y - startY)) * 0.01;
                 if (s < 0.2) s = 0.2;
                 wrapper.dataset.scale = s;
-                wrapper.style.transform = `translate(-50%, -50%) scale(${s})`;
+                const rotation = parseFloat(wrapper.dataset.rotation) || 0;
+                wrapper.style.transform = `translate(-50%, -50%) scale(${s}) rotate(${rotation}deg)`;
+            }
+            if(isRotating) {
+                const angle = Math.atan2(y - centerY, x - centerX) * 180 / Math.PI;
+                const startAngle = Math.atan2(startY - centerY, startX - centerX) * 180 / Math.PI;
+                let delta = angle - startAngle;
+                const newRotation = initRotation + delta;
+                wrapper.dataset.rotation = newRotation;
+                const scale = parseFloat(wrapper.dataset.scale);
+                wrapper.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${newRotation}deg)`;
             }
         };
 
-        const endAction = () => { isDragging = false; isResizing = false; };
+        const endAction = () => { isDragging = false; isResizing = false; isRotating = false; };
         
         // Gắn sự kiện PC
         document.addEventListener('mousemove', moveAction);
@@ -912,7 +934,8 @@
             s += e.deltaY * -0.001; 
             if (s < 0.2) s = 0.2;
             wrapper.dataset.scale = s;
-            wrapper.style.transform = `translate(-50%, -50%) scale(${s})`;
+            const rotation = parseFloat(wrapper.dataset.rotation) || 0;
+            wrapper.style.transform = `translate(-50%, -50%) scale(${s}) rotate(${rotation}deg)`;
         });
     }
 
