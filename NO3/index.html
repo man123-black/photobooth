@@ -551,24 +551,25 @@
     
     // TỔNG HỢP 17 FILE FILTER - PHẢI CHẮC CHẮN ĐÃ TẢI CẢ 17 FILE NÀY ĐỂ CHUNG THƯ MỤC
     // Dùng link raw GitHub trực tiếp, khỏi lo tải nhầm trang HTML hay file bị lỗi
+    // Dùng server jsDelivr để bẻ khóa bảo mật CORS của GitHub
     const effectsPath = {
-        'makeup': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/MakeupLook.deepar',
-        'flower_face': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/flower_face.deepar',
-        'pixel_hearts': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Pixel_Hearts.deepar',
-        'rayban': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/ray-ban-wayfarer.deepar',
-        'viking': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/viking_helmet.deepar',
-        'neon_horns': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Neon_Devil_Horns.deepar',
-        'vendetta': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Vendetta_Mask.deepar',
-        'hope': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Hope.deepar',
-        'stallone': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Stallone.deepar',
-        'emotion_ex': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Emotions_Exaggerator.deepar',
-        'humanoid': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Humanoid.deepar',
-        'snail': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Snail.deepar',
-        'fire': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Fire_Effect.deepar',
-        'emotion_meter': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Emotion_Meter.deepar',
-        'ping_pong': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Ping_Pong.deepar',
-        'split_view': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/Split_View_Look.deepar',
-        'galaxy': 'https://raw.githubusercontent.com/DeepARSDK/quickstart-web-js-npm/main/public/effects/galaxy_background_web.deepar'
+        'makeup': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/MakeupLook.deepar',
+        'flower_face': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/flower_face.deepar',
+        'pixel_hearts': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Pixel_Hearts.deepar',
+        'rayban': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/ray-ban-wayfarer.deepar',
+        'viking': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/viking_helmet.deepar',
+        'neon_horns': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Neon_Devil_Horns.deepar',
+        'vendetta': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Vendetta_Mask.deepar',
+        'hope': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Hope.deepar',
+        'stallone': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Stallone.deepar',
+        'emotion_ex': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Emotions_Exaggerator.deepar',
+        'humanoid': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Humanoid.deepar',
+        'snail': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Snail.deepar',
+        'fire': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Fire_Effect.deepar',
+        'emotion_meter': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Emotion_Meter.deepar',
+        'ping_pong': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Ping_Pong.deepar',
+        'split_view': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Split_View_Look.deepar',
+        'galaxy': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/galaxy_background_web.deepar'
     };
 
     let selectedLayoutType = '2'; 
