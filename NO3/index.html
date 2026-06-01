@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Photobooth Pro (DeepAR 17 Filter)</title>
+    <title>Photobooth</title>
     <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bebas+Neue&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&family=Syne:wght@700&family=Space+Grotesk:wght@700&family=Great+Vibes&family=Source+Code+Pro:wght@700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/deepar/js/deepar.js"></script>
-
     <style>
         :root {
             --bg-dark: #0a0710; 
@@ -98,15 +95,13 @@
 
         .capture-screen { align-items: center; justify-content: flex-start; }
         #status-text { margin-bottom: 5px; font-size: 22px; font-weight: 800; letter-spacing: 1px;}
-        
         .camera-container { 
             position: relative; width: 460px; height: 345px; background: #000; 
             border-radius: 16px; overflow: hidden; margin-bottom: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--border-color);
         }
-        #deepar-canvas { width: 100%; height: 100%; object-fit: cover; }
-        
-        .countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: 900; color: white; text-shadow: 0 5px 25px rgba(0,0,0,0.9); display: none; z-index: 10;}
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: 900; color: white; text-shadow: 0 5px 25px rgba(0,0,0,0.9); display: none; }
         .photo-placeholders { display: flex; gap: 10px; margin-bottom: 25px; }
         .placeholder-box { 
             width: 46px; height: 34px; background: rgba(255,255,255,0.03); 
@@ -114,8 +109,6 @@
             background-size: cover; background-position: center; transition: 0.3s;
         }
         .controls-grid { display: grid; grid-template-columns: 160px 260px; gap: 15px 20px; }
-        .capture-filters { width: 100%; max-width: 700px; margin-bottom: 14px; }
-        .capture-filters .filter-grid { display: flex; flex-wrap: wrap; gap: 10px; }
 
         .select-screen { align-items: center; justify-content: flex-start; padding-top: 15px;}
         .select-screen h1 { font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px;}
@@ -173,7 +166,7 @@
         .photo-grid { display: flex; flex-direction: column; gap: 10px; z-index: 2;}
         .layout-grid .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
-        .photo-item { width: 100%; background: #ccc; aspect-ratio: 4/3; overflow: hidden; border-radius: 4px; box-shadow: inset 0 3px 6px rgba(0,0,0,0.2); position: relative;}
+        .photo-item { width: 100%; background: #ccc; aspect-ratio: 4/3; overflow: hidden; border-radius: 4px; box-shadow: inset 0 3px 6px rgba(0,0,0,0.2); }
         .photo-item img { 
             width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.3s; 
             filter: brightness(var(--br, 100%)) contrast(var(--ct, 100%)) saturate(var(--sat, 100%)) var(--custom-filter, grayscale(0)) var(--funny-filter, grayscale(0)); 
@@ -185,9 +178,17 @@
         #qr-code { margin-top: 8px; display: none; }
         #qr-code img { width: 35px; height: 35px;}
 
-        .sticker-wrapper { position: absolute; display: inline-block; user-select: none; border: 1.5px dashed transparent; padding: 4px; cursor: grab; transform: translate(-50%, -50%) scale(1) rotate(0deg); transition: border 0.2s; touch-action: none; }
+        .sticker-wrapper {
+            position: absolute; display: inline-block; user-select: none;
+            border: 1.5px dashed transparent; padding: 4px; cursor: grab;
+            transform: translate(-50%, -50%) scale(1) rotate(0deg); transition: border 0.2s; touch-action: none;
+        }
         .sticker-wrapper.active-sticker, .sticker-wrapper:hover { border-color: rgba(176, 70, 255, 0.8); z-index: 100;}
-        .sticker-action { position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 10px; color: black; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10; transition: 0.2s; }
+        .sticker-action {
+            position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%;
+            display: none; align-items: center; justify-content: center; font-size: 10px; color: black;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10; transition: 0.2s;
+        }
         .sticker-action:hover { transform: scale(1.15); }
         .sticker-wrapper.active-sticker .sticker-action, .sticker-wrapper:hover .sticker-action { display: flex; }
         .del-btn { top: -10px; right: -10px; color: #ff3b30; font-weight: bold;}
@@ -267,6 +268,7 @@
         .dl-jpg { background: linear-gradient(135deg, #6a5acd, #b046ff); color: white; box-shadow: 0 5px 15px rgba(176, 70, 255, 0.3);}
         .dl-jpg:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(176, 70, 255, 0.5); }
 
+        /* --- PHẦN BỔ SUNG CHO MOBILE (KHÔNG TRÀN, CO GIÃN) --- */
         @media (max-width: 1200px) {
             .container { width: 100%; height: auto; min-height: 100vh; border-radius: 0; padding: 15px; }
             .decorate-screen.active { flex-direction: column; overflow-y: auto; }
@@ -300,7 +302,6 @@
         <div class="logo">DuyMan <span class="gradient-text">STUDIO</span></div>
         <div class="header-decor"><span class="active"></span><span></span><span></span></div>
     </div>
-    
     <div class="screen home-screen active" id="screen-home">
         <h1>Chọn kiểu khung hình</h1>
         <p>Bố cục nào phù hợp với bạn hôm nay? ✨</p>
@@ -325,38 +326,11 @@
     <div class="screen capture-screen" id="screen-capture">
         <h2 id="status-text">Tấm 1/4</h2>
         <p style="color: var(--text-gray); margin-bottom: 10px; font-size: 13px;">Sẵn sàng tạo dáng nhé! 📷</p>
-        
         <div class="camera-container">
-            <canvas id="deepar-canvas"></canvas>
+            <video id="webcam" autoplay playsinline></video>
             <div class="countdown" id="countdown">3</div>
         </div>
-        
-        <div class="capture-filters">
-            <div class="section-title" style="font-size: 12px; margin-bottom: 10px;">Kho Filter AR Siêu Cấp</div>
-            <div class="filter-grid" style="max-height: 120px; overflow-y: auto; padding-bottom: 5px;">
-                <button class="filter-btn capture-filter-btn active" onclick="applyDeepARFilter('none', this)"><div class="f-color" style="background: #b046ff"></div>Mặt mộc</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('makeup', this)"><div class="f-color" style="background: #ff7cb2"></div>Make Up</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('flower_face', this)"><div class="f-color" style="background: #ffbba5"></div>Mặt Hoa</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('pixel_hearts', this)"><div class="f-color" style="background: #ff5b99"></div>Tim Pixel</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('rayban', this)"><div class="f-color" style="background: #333"></div>Kính Rayban</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('viking', this)"><div class="f-color" style="background: #a0522d"></div>Nón Viking</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('neon_horns', this)"><div class="f-color" style="background: #ff0000"></div>Sừng quỷ</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('vendetta', this)"><div class="f-color" style="background: #fff"></div>Mặt nạ V</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('hope', this)"><div class="f-color" style="background: #00e5ff"></div>Hope</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('stallone', this)"><div class="f-color" style="background: #f6d365"></div>Mặt Rambo</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('emotion_ex', this)"><div class="f-color" style="background: #9cf0d1"></div>Méo mặt</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('humanoid', this)"><div class="f-color" style="background: #777"></div>Robot</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('snail', this)"><div class="f-color" style="background: #8b4513"></div>Ốc sên</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('fire', this)"><div class="f-color" style="background: #ff4500"></div>Lửa cháy</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('emotion_meter', this)"><div class="f-color" style="background: #00e5ff"></div>Đo cảm xúc</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('ping_pong', this)"><div class="f-color" style="background: #111"></div>Bóng bàn</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('split_view', this)"><div class="f-color" style="background: #b046ff"></div>Split View</button>
-                <button class="filter-btn capture-filter-btn" onclick="applyDeepARFilter('galaxy', this)"><div class="f-color" style="background: #2b5876"></div>Nền Galaxy</button>
-            </div>
-        </div>
-        
         <div class="photo-placeholders" id="placeholders"></div>
-        
         <div class="controls-grid">
             <button class="btn-outline" onclick="switchCamera()"><i class="fa-solid fa-rotate"></i> ĐỔI CAMERA</button>
             <button class="btn" id="btn-capture" style="width: 100%" onclick="startCapture()"><i class="fa-solid fa-camera"></i> BẮT ĐẦU CHỤP</button>
@@ -387,14 +361,15 @@
 
                 <div class="photo-grid" id="photo-grid"></div>
                 <div class="frame-footer" id="frame-footer">
-                    <h3 id="footer-text">DUYMAN</h3>
-                    <p id="footer-date">31 tháng 5, 2026<br><span id="footer-logo">✦ DuyMan STUDIO ✦</span></p>
+                    <h3 id="footer-text">DEVPAN</h3>
+                    <p id="footer-date">31 tháng 5, 2026<br><span id="footer-logo">✦ DevPan STUDIO ✦</span></p>
                     <div id="qr-code"></div>
                 </div>
             </div>
         </div>
         
         <div class="sidebar">
+            
             <div class="tool-section">
                 <div class="section-title"><i class="fa-solid fa-palette"></i> MÀU NỀN</div>
                 <div class="color-palette">
@@ -419,18 +394,18 @@
             <div class="tool-section">
                 <div class="section-title"><i class="fa-regular fa-square"></i> VIỀN KHUNG</div>
                 <div class="grid-4">
-                    <div class="icon-btn border-btn active" onclick="applyBorder('none', this)"><span>🚫</span>Không</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('chambi', this)"><span>💬</span>Chấm bi</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('song', this)"><span>〰️</span>Sóng</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('neon', this)"><span>💡</span>Neon</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('vintage', this)"><span>📻</span>Vintage</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('sao', this)"><span>⭐</span>Sao</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('tim', this)"><span>💖</span>Trái tim</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('hoa', this)"><span>🌸</span>Hoa</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('glitter', this)"><span>✨</span>Glitter</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('polaroid', this)"><span>🖼️</span>Polaroid</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('rainbow', this)"><span>🌈</span>Cầu vồng</div>
-                    <div class="icon-btn border-btn" onclick="applyBorder('confetti', this)"><span>🎊</span>Confetti</div>
+                    <div class="icon-btn active" onclick="applyBorder('none', this)"><span>🚫</span>Không</div>
+                    <div class="icon-btn" onclick="applyBorder('chambi', this)"><span>💬</span>Chấm bi</div>
+                    <div class="icon-btn" onclick="applyBorder('song', this)"><span>〰️</span>Sóng</div>
+                    <div class="icon-btn" onclick="applyBorder('neon', this)"><span>💡</span>Neon</div>
+                    <div class="icon-btn" onclick="applyBorder('vintage', this)"><span>📻</span>Vintage</div>
+                    <div class="icon-btn" onclick="applyBorder('sao', this)"><span>⭐</span>Sao</div>
+                    <div class="icon-btn" onclick="applyBorder('tim', this)"><span>💖</span>Trái tim</div>
+                    <div class="icon-btn" onclick="applyBorder('hoa', this)"><span>🌸</span>Hoa</div>
+                    <div class="icon-btn" onclick="applyBorder('glitter', this)"><span>✨</span>Glitter</div>
+                    <div class="icon-btn" onclick="applyBorder('polaroid', this)"><span>🖼️</span>Polaroid</div>
+                    <div class="icon-btn" onclick="applyBorder('rainbow', this)"><span>🌈</span>Cầu vồng</div>
+                    <div class="icon-btn" onclick="applyBorder('confetti', this)"><span>🎊</span>Confetti</div>
                 </div>
             </div>
 
@@ -489,12 +464,13 @@
                 <div class="grid-2">
                     <button class="tool-btn active" onclick="setTool('select', this)"><i class="fa-solid fa-hand-pointer"></i> Chọn/Sửa</button>
                     <button class="tool-btn" onclick="setTool('draw', this)"><i class="fa-solid fa-pen"></i> Vẽ tay</button>
+                    <button class="tool-btn" onclick="applyFunnyFilter(this)"><i class="fa-solid fa-face-smile-wink"></i> Méo mặt</button>
                     <button class="tool-btn" onclick="addCustomTextSticker()"><i class="fa-solid fa-font"></i> Thêm chữ</button>
                     <button class="tool-btn" onclick="setTool('delete', this)"><i class="fa-solid fa-trash-can"></i> Xóa icon</button>
                     
-                    <div class="draw-options" style="grid-column: span 2;">
+                    <div class="draw-options">
                         <input type="color" id="draw-color" class="draw-color-btn" value="#ff5b99" title="Màu vẽ">
-                        <input type="range" id="draw-size" min="2" max="20" value="6" style="width: 100%;" oninput="document.getElementById('size-val').innerText=this.value+'px'">
+                        <input type="range" id="draw-size" min="2" max="20" value="6" style="width: 40px;" oninput="document.getElementById('size-val').innerText=this.value+'px'">
                         <span id="size-val" style="font-size: 10px; color: gray;">6px</span>
                     </div>
                 </div>
@@ -546,41 +522,14 @@
 </div>
 
 <script>
-    // BẮT BUỘC ĐIỀN LICENSE KEY CỦA BẠN TẠI ĐÂY
-    const deepARKey = 'b452b7b0a4db7c0a46891f42a4438a9a5e06ded3c5cb3ef642e7fbc215f57751bec99f74cd32faab'; 
-    
-    // TỔNG HỢP 17 FILE FILTER - PHẢI CHẮC CHẮN ĐÃ TẢI CẢ 17 FILE NÀY ĐỂ CHUNG THƯ MỤC
-    // Dùng link raw GitHub trực tiếp, khỏi lo tải nhầm trang HTML hay file bị lỗi
-    // Dùng server jsDelivr để bẻ khóa bảo mật CORS của GitHub
-    const effectsPath = {
-        'makeup': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/MakeupLook.deepar',
-        'flower_face': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/flower_face.deepar',
-        'pixel_hearts': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Pixel_Hearts.deepar',
-        'rayban': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/ray-ban-wayfarer.deepar',
-        'viking': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/viking_helmet.deepar',
-        'neon_horns': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Neon_Devil_Horns.deepar',
-        'vendetta': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Vendetta_Mask.deepar',
-        'hope': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Hope.deepar',
-        'stallone': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Stallone.deepar',
-        'emotion_ex': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Emotions_Exaggerator.deepar',
-        'humanoid': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Humanoid.deepar',
-        'snail': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Snail.deepar',
-        'fire': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Fire_Effect.deepar',
-        'emotion_meter': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Emotion_Meter.deepar',
-        'ping_pong': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Ping_Pong.deepar',
-        'split_view': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/Split_View_Look.deepar',
-        'galaxy': 'https://cdn.jsdelivr.net/gh/DeepARSDK/quickstart-web-js-npm@main/public/effects/galaxy_background_web.deepar'
-    };
-
     let selectedLayoutType = '2'; 
     let photosToTake = 4;    
     let photosRequired = 2;  
     
     let photosTaken = [];
     let selectedIndices = [];
-    
-    // BIẾN DEEPAR
-    let deepARObj = null;
+    let stream = null;
+    let useFrontCamera = true;
 
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -596,10 +545,7 @@
         el.classList.add('selected');
     }
 
-    function goToHome() { 
-        if(deepARObj) deepARObj.stopVideo(); 
-        showScreen('screen-home'); 
-    }
+    function goToHome() { stopCamera(); showScreen('screen-home'); }
 
     async function startCameraPhase() {
         showScreen('screen-capture');
@@ -615,47 +561,24 @@
         }
 
         updateStatusText();
-        await initDeepARCamera();
+        await initCamera();
     }
 
-    async function initDeepARCamera() {
-        if (!deepARObj) {
-            try {
-                deepARObj = await deepar.initialize({
-                    licenseKey: deepARKey,
-                    canvas: document.getElementById('deepar-canvas'),
-                    effect: '' 
-                });
-                console.log("DeepAR đã sẵn sàng với 17 effect!");
-            } catch (error) {
-                console.error("Lỗi khởi tạo DeepAR:", error);
-                alert("Vui lòng kiểm tra lại DeepAR License Key hoặc xem lại kết nối mạng!");
-            }
-        } else {
-            deepARObj.startVideo();
+    async function initCamera() {
+        const video = document.getElementById('webcam');
+        try {
+            if(stream) stopCamera();
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? "user" : "environment" } });
+            video.srcObject = stream;
+            video.style.transform = useFrontCamera ? "scaleX(-1)" : "scaleX(1)";
+        } catch (err) { 
+            console.log("Dùng camera giả lập để test trang trí.");
         }
     }
 
-    function switchCamera() { 
-        if(deepARObj) deepARObj.switchCamera(); 
-    }
-    
+    async function switchCamera() { useFrontCamera = !useFrontCamera; await initCamera(); }
+    function stopCamera() { if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; } }
     function updateStatusText() { document.getElementById('status-text').innerText = `Tấm ${photosTaken.length + 1}/${photosToTake}`; }
-
-    async function applyDeepARFilter(effectKey, btnEl) {
-        if(btnEl) {
-            document.querySelectorAll('.capture-filter-btn').forEach(b => b.classList.remove('active'));
-            btnEl.classList.add('active');
-        }
-
-        if(!deepARObj) return;
-
-        if (effectKey === 'none') {
-            await deepARObj.clearEffect();
-        } else {
-            await deepARObj.switchEffect(effectsPath[effectKey]);
-        }
-    }
 
     async function startCapture() {
         document.getElementById('btn-capture').disabled = true;
@@ -664,10 +587,10 @@
         for (let i = 0; i < photosToTake; i++) {
             updateStatusText();
             await waitCountdown(countdownTime);
-            await takeSnapshot(i);
+            takeSnapshot(i);
         }
         
-        if(deepARObj) deepARObj.stopVideo(); 
+        stopCamera();
         buildSelectScreen(); 
     }
 
@@ -684,9 +607,22 @@
         });
     }
 
-    async function takeSnapshot(index) {
-        if(!deepARObj) return;
-        const dataUrl = await deepARObj.takeScreenshot();
+    function takeSnapshot(index) {
+        const video = document.getElementById('webcam');
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; canvas.height = 480; 
+        const ctx = canvas.getContext('2d');
+        
+        if(stream) {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            if (useFrontCamera) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = `hsl(${Math.random()*360}, 70%, 50%)`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        const dataUrl = canvas.toDataURL('image/jpeg');
         photosTaken.push(dataUrl);
         document.querySelectorAll('.placeholder-box')[index].style.backgroundImage = `url(${dataUrl})`;
     }
@@ -720,7 +656,6 @@
         selectedIndices.forEach((selIdx, i) => { items[selIdx].querySelector('.badge-select').innerText = i + 1; });
         updateDecorateBtn();
     }
-    
     function updateDecorateBtn() { document.getElementById('btn-goto-decorate').disabled = (selectedIndices.length !== photosRequired); }
 
     function buildDecorateScreen() {
@@ -742,6 +677,7 @@
         document.getElementById('contrast').value = 100;
         document.getElementById('saturation').value = 100;
         updateSliders();
+        isFunnyFilter = false; applyFunnyFilter(null, true);
 
         document.getElementById('footer-text').innerText = document.getElementById('footer-text-input').value;
         updateFooterDateDisplay();
@@ -767,6 +703,7 @@
 
     function changeBg(color, btnEl) {
         const frame = document.getElementById('final-frame');
+
         frame.style.background = color;
         
         let textColor = 'black';
@@ -822,16 +759,20 @@
         document.documentElement.style.setProperty('--sat', sat + '%');
     }
 
+    let isFunnyFilter = false;
+    function applyFunnyFilter(btnEl, reset=false) {
+        if(reset) isFunnyFilter = false; else isFunnyFilter = !isFunnyFilter;
+        document.documentElement.style.setProperty('--funny-filter', isFunnyFilter ? 'hue-rotate(90deg) saturate(200%)' : 'grayscale(0)');
+        if(btnEl) isFunnyFilter ? btnEl.classList.add('active') : btnEl.classList.remove('active');
+    }
+
     let footerDateTimer = null;
     function getFooterDateString() {
         const today = new Date();
         return `${today.getDate()} tháng ${today.getMonth() + 1}, ${today.getFullYear()}`;
     }
     function updateFooterDateDisplay() {
-        const footerDate = document.getElementById('footer-date');
-        const logoSpan = document.getElementById('footer-logo');
-        const logoHtml = logoSpan ? '<br>' + logoSpan.outerHTML : '';
-        footerDate.innerHTML = getFooterDateString() + logoHtml;
+        document.getElementById('footer-date').innerHTML = getFooterDateString();
     }
     function ensureFooterDateLive() {
         updateFooterDateDisplay();
@@ -847,16 +788,12 @@
     function updateFooterTextColor(color) {
         document.getElementById('frame-footer').style.color = color;
     }
-    function toggleEl(id, isShow) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.style.display = isShow ? '' : 'none';
-    }
+    function toggleEl(id, isShow) { document.getElementById(id).style.display = isShow ? 'block' : 'none'; }
 
     let currentTool = 'select'; 
     function setTool(tool, btnEl) {
         currentTool = tool;
-        document.querySelectorAll('.tool-btn').forEach(b => { b.classList.remove('active')});
+        document.querySelectorAll('.tool-btn').forEach(b => { if(!b.innerHTML.includes('Méo mặt')) b.classList.remove('active')});
         if(btnEl) btnEl.classList.add('active');
 
         const drawLayer = document.getElementById('draw-layer');
@@ -941,20 +878,21 @@
                 centerX = rect.left + rect.width / 2;
                 centerY = rect.top + rect.height / 2;
             }
-            e.stopPropagation(); 
+            e.stopPropagation(); // Xoá preventDefault ở đây để di động vẫn click được bình thường
         };
 
+        // Bắt sự kiện trên PC
         wrapper.addEventListener('mousedown', (e) => startAction(e, 'drag'));
         resBtn.addEventListener('mousedown', (e) => startAction(e, 'resize'));
         rotBtn.addEventListener('mousedown', (e) => startAction(e, 'rotate'));
-        
+        // Bắt sự kiện trên Mobile
         wrapper.addEventListener('touchstart', (e) => startAction(e, 'drag'));
         resBtn.addEventListener('touchstart', (e) => startAction(e, 'resize'));
         rotBtn.addEventListener('touchstart', (e) => startAction(e, 'rotate'));
 
         const moveAction = (e) => {
             if(!isDragging && !isResizing && !isRotating) return;
-            e.preventDefault(); 
+            e.preventDefault(); // Ngăn cuộn trang web khi đang kéo thả trên điện thoại
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
             
@@ -982,8 +920,10 @@
 
         const endAction = () => { isDragging = false; isResizing = false; isRotating = false; };
         
+        // Gắn sự kiện PC
         document.addEventListener('mousemove', moveAction);
         document.addEventListener('mouseup', endAction);
+        // Gắn sự kiện Mobile
         document.addEventListener('touchmove', moveAction, {passive: false});
         document.addEventListener('touchend', endAction);
         
@@ -1015,10 +955,12 @@
         ctxDraw.lineCap = 'round'; ctxDraw.lineJoin = 'round';
 
         if (!isDrawEventsBound) {
+            // PC
             canvasDraw.addEventListener('mousedown', startDraw);
             canvasDraw.addEventListener('mousemove', drawMove);
             window.addEventListener('mouseup', endDraw);
             
+            // Mobile (Cảm ứng)
             canvasDraw.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, {passive: false});
             canvasDraw.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e); }, {passive: false});
             window.addEventListener('touchend', endDraw);
@@ -1033,6 +975,7 @@
         isDrawing = true; currentPath = [];
         const rect = canvasDraw.getBoundingClientRect();
         
+        // Hỗ trợ cả chuột (PC) và ngón tay (Mobile)
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         
@@ -1113,7 +1056,7 @@
             link.href = canvas.toDataURL('image/' + format, 0.9);
             link.click();
         }).catch(err => {
-            alert("Lỗi tải ảnh! Đảm bảo bạn đang chạy trên trình duyệt web và không bị lỗi bảo mật CORS.");
+            alert("Lỗi tải ảnh! Cần chạy ở Localhost để không bị chặn bảo mật trình duyệt.");
         }).finally(() => {
             btn.innerHTML = oldText;
             btn.disabled = false;
